@@ -2,6 +2,15 @@
 #include "Scheduler/scheduler.h"
 #include <iostream>
 
+/*
+ * Teste 3: verifica desbloqueios parciais em cadeia.
+ *
+ * Objetivos:
+ * - P1, P2 e P3 alocam recursos distintos.
+ * - P4 e P5 ficam bloqueados por recursos já ocupados.
+ * - Quando P1 libera recursos, apenas um bloqueado deve ser atendido.
+ * - Quando P2 libera recursos, o último bloqueado deve ser atendido.
+ */
 int main()
 {
     Scheduler scheduler;

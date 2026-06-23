@@ -2,6 +2,15 @@
 #include "Scheduler/scheduler.h"
 #include <iostream>
 
+/*
+ * Teste básico de alocação e bloqueio.
+ *
+ * Cenário:
+ * 1) P1 solicita todos os recursos e deve ser alocado.
+ * 2) P2 solicita scanner e impressora; deve ficar bloqueado.
+ * 3) P1 libera recursos e o Scheduler deve reavaliar P2.
+ * 4) P3 tenta alocar apenas impressora.
+ */
 int main()
 {
     Scheduler scheduler;

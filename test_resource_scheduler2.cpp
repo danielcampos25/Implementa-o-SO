@@ -2,6 +2,14 @@
 #include "Scheduler/scheduler.h"
 #include <iostream>
 
+/*
+ * Teste 2: estresse da fila de bloqueio.
+ *
+ * Objetivos:
+ * - P1 consome vários recursos.
+ * - P2 e P3 ficam bloqueados por disputas de recursos.
+ * - Quando P1 libera seus recursos, todos os bloqueados devem ser reavaliados.
+ */
 int main()
 {
     Scheduler scheduler;

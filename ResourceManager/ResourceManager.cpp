@@ -8,8 +8,19 @@ using namespace std;
 
 /*
  * Construtor do ResourceManager
- * Inicializa todos os recursos como livres (-1 indica "sem dono")
- * e associa opcionalmente o Scheduler responsável pelo bloqueio de processos
+ *
+ * Inicializa todos os recursos como livres:
+ * - scannerOwner = -1
+ * - modemOwner = -1
+ * - printerOwners[i] = -1
+ * - sataOwners[i] = -1
+ *
+ * O valor -1 indica que o recurso não possui nenhum processo
+ * associado no momento.
+ *
+ * Também armazena uma referência para o Scheduler, que será
+ * utilizado para bloquear e desbloquear processos quando
+ * houver disputa por recursos de E/S.
  */
 ResourceManager::ResourceManager(Scheduler *scheduler)
     : scannerOwner(-1), modemOwner(-1), printerOwners(), sataOwners(), scheduler(scheduler)
@@ -19,8 +30,10 @@ ResourceManager::ResourceManager(Scheduler *scheduler)
 }
 
 /*
- * Permite alterar o Scheduler associado ao ResourceManager
- * Útil caso o sistema seja inicializado em etapas separadas
+ * Atualiza a referência para o Scheduler utilizado pelo sistema.
+ *
+ * Essa função existe para permitir que o ResourceManager e o
+ * Scheduler sejam criados separadamente e conectados posteriormente.
  */
 void ResourceManager::setScheduler(Scheduler *scheduler)
 {
@@ -29,12 +42,18 @@ void ResourceManager::setScheduler(Scheduler *scheduler)
 }
 
 /*
- * Verifica quais recursos estão bloqueando a requisição atual
- * Retorna um struct (blockedBy) indicando individualmente cada recurso
+ * Verifica se os recursos solicitados pelo processo estão disponíveis.
  *
- * OBS:
- * true  -> recurso está bloqueando
- * false -> recurso está disponível para uso
+ * O retorno é uma estrutura blockedBy contendo, para cada recurso:
+ *
+ * true  -> o recurso está bloqueando a execução do processo
+ * false -> o recurso está disponível para uso
+ *
+ * A verificação considera que um recurso já pertencente ao próprio
+ * processo NÃO deve ser tratado como bloqueado.
+ *
+ * Nenhum estado interno é modificado nesta função; ela apenas
+ * consulta a situação atual dos recursos.
  */
 blockedBy ResourceManager::canAllocate(const ResourceRequest &req)
 {
@@ -66,15 +85,24 @@ blockedBy ResourceManager::canAllocate(const ResourceRequest &req)
 }
 
 /*
- * Tenta alocar todos os recursos solicitados pelo processo
+ * Tenta realizar a alocação dos recursos solicitados por um processo.
  *
- * Estratégia usada:
- * - Verifica todos os recursos primeiro (alocação atômica)
- * - Se qualquer recurso falhar:
- *      -> processo é bloqueado no Scheduler
- *      -> não aloca nenhum recurso (evita estado parcial)
- * - Se todos estiverem disponíveis:
- *      -> realiza a alocação completa
+ * Fluxo:
+ *
+ * 1) Verifica a disponibilidade de todos os recursos solicitados.
+ * 2) Caso algum recurso esteja indisponível:
+ *      - o processo pode ser enviado para a fila BLOCKED_IO
+ *        do Scheduler (quando canBlock == true);
+ *      - nenhum recurso é alocado;
+ *      - a função retorna false.
+ * 3) Caso todos os recursos estejam disponíveis:
+ *      - a alocação é realizada de forma atômica;
+ *      - o processo passa a ser o proprietário dos recursos;
+ *      - a função retorna true.
+ *
+ * O parâmetro canBlock é utilizado principalmente durante as
+ * reavaliações de processos bloqueados, evitando que o mesmo
+ * processo seja inserido repetidamente na fila BLOCKED_IO.
  */
 bool ResourceManager::allocate(const ResourceRequest &req, bool canBlock)
 {
@@ -132,8 +160,13 @@ bool ResourceManager::allocate(const ResourceRequest &req, bool canBlock)
 }
 
 /*
- * Libera todos os recursos que estavam sendo usados por um processo
- * chamado pelo PID quando o processo termina ou perde a CPU
+ * Libera todos os recursos atualmente associados ao processo.
+ *
+ * Essa função normalmente é chamada quando o processo termina
+ * sua execução ou deixa de utilizar os dispositivos de E/S.
+ *
+ * Após a liberação, o Scheduler é notificado para verificar
+ * se algum processo da fila BLOCKED_IO pode voltar para READY.
  */
 void ResourceManager::release(int pid)
 {
@@ -162,8 +195,14 @@ void ResourceManager::release(int pid)
 }
 
 /*
- * Exibe o estado atual de todos os recursos do sistema
- * Útil para debug e demonstração do trabalho
+ * Exibe o estado atual de todos os recursos gerenciados.
+ *
+ * Para cada dispositivo é mostrado:
+ * - FREE, quando não existe processo utilizando o recurso;
+ * - PID X, quando o recurso está associado a um processo.
+ *
+ * Função utilizada principalmente para depuração e demonstração
+ * do funcionamento do gerenciador de recursos.
  */
 void ResourceManager::printStatus() const
 {
