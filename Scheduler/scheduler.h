@@ -2,35 +2,33 @@
 #define SCHEDULER_H
 
 #include <queue>
+#include "../ResourceManager/ResourceManager.h"
 
 struct blockedBy;
 
 struct BlockedProcess
 {
     int pid;
+    ResourceRequest request;
     blockedBy reason;
 };
 
 class Scheduler
 {
 private:
-    // fila global de processos bloqueados por I/O (recursos)
     std::queue<BlockedProcess> blockedIO;
+    ResourceManager *resourceManager = nullptr;
 
 public:
-
     Scheduler();
+    void setResourceManager(ResourceManager *rm);
 
-    // adiciona processo na fila de bloqueio
-    void blockProcess(int pid, const blockedBy& reason);
-
-    // remove processo da fila de bloqueio (quando puder voltar a READY)
+    void blockProcess(const ResourceRequest &request, const blockedBy &reason);
     void unblockProcess(int pid);
 
-    // acesso à fila (para rechecagem pelo sistema)
-    std::queue<BlockedProcess>& getBlockedQueue();
+    void checkBlockedProcesses();
 
-    // utilitário
+    std::queue<BlockedProcess> &getBlockedQueue();
     bool isBlocked(int pid) const;
 };
 
