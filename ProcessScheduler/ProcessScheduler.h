@@ -49,7 +49,7 @@ private:
     const Process &getExistingProcess(int pid) const;
     void enqueueReadyProcess(int pid);
     std::optional<int> popNextReadyPid();
-    void incrementWaitingCyclesExcept(int runningPid);
+    void advanceWaitingCycles(int elapsedCycles, int runningPid);
     void applyAging();
     void removeFinishedFromReadyQueues();
     bool hasUnfinishedProcess() const;

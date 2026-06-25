@@ -2,6 +2,34 @@
 
 #include <stdexcept>
 
+namespace
+{
+bool isBinaryResourceRequest(int request)
+{
+    return request == 0 || request == 1;
+}
+
+bool hasInvalidResourceRequest(int printerRequest,
+                               int scannerRequest,
+                               int modemRequest,
+                               int sataDiskRequest)
+{
+    return !isBinaryResourceRequest(printerRequest) ||
+           !isBinaryResourceRequest(scannerRequest) ||
+           !isBinaryResourceRequest(modemRequest) ||
+           !isBinaryResourceRequest(sataDiskRequest);
+}
+
+bool hasIoRequest(int printerRequest,
+                  int scannerRequest,
+                  int modemRequest,
+                  int sataDiskRequest)
+{
+    return printerRequest != 0 || scannerRequest != 0 ||
+           modemRequest != 0 || sataDiskRequest != 0;
+}
+}
+
 ProcessScheduler::ProcessScheduler(int maxProcesses, int agingThreshold)
     : readyQueues(),
       processes(),
@@ -85,17 +113,24 @@ std::optional<int> ProcessScheduler::popNextReadyPid()
     return std::nullopt;
 }
 
-void ProcessScheduler::incrementWaitingCyclesExcept(int runningPid)
+void ProcessScheduler::advanceWaitingCycles(int elapsedCycles, int runningPid)
 {
-    for (const std::deque<int> &queue : readyQueues)
+    for (int cycle = 0; cycle < elapsedCycles; ++cycle)
     {
-        for (int pid : queue)
+        ++currentCycle;
+
+        for (const std::deque<int> &queue : readyQueues)
         {
-            if (pid != runningPid && hasProcess(pid))
+            for (int pid : queue)
             {
-                processes[pid].incrementWaitingCycles();
+                if (pid != runningPid && hasProcess(pid))
+                {
+                    processes[pid].incrementWaitingCycles();
+                }
             }
         }
+
+        applyAging();
     }
 }
 
@@ -178,9 +213,22 @@ int ProcessScheduler::createProcess(int startTime,
         return -1;
     }
 
-    if (processorTime < 0 || memoryBlocks < 0)
+    if (startTime < 0 || processorTime < 0 || memoryBlocks < 0)
     {
         recordEvent(SchedulerEventType::Rejected, -1, "Campos numericos invalidos");
+        return -1;
+    }
+
+    if (hasInvalidResourceRequest(printerRequest, scannerRequest, modemRequest, sataDiskRequest))
+    {
+        recordEvent(SchedulerEventType::Rejected, -1, "Requisicoes de recursos invalidas");
+        return -1;
+    }
+
+    if (priority == Process::REAL_TIME_PRIORITY &&
+        hasIoRequest(printerRequest, scannerRequest, modemRequest, sataDiskRequest))
+    {
+        recordEvent(SchedulerEventType::Rejected, -1, "Processo de tempo real nao pode requisitar E/S");
         return -1;
     }
 
@@ -254,16 +302,13 @@ bool ProcessScheduler::runNext()
     if (process.isRealTime())
     {
         const int consumed = process.executeUntilFinished();
-        currentCycle += consumed;
-        incrementWaitingCyclesExcept(pid);
+        advanceWaitingCycles(consumed, pid);
         recordEvent(SchedulerEventType::Finish, pid, "Processo de tempo real finalizado");
-        applyAging();
         return true;
     }
 
     const int consumed = process.executeFor(USER_QUANTUM);
-    currentCycle += consumed;
-    incrementWaitingCyclesExcept(pid);
+    advanceWaitingCycles(consumed, pid);
     recordEvent(SchedulerEventType::Quantum, pid, "Processo de usuario consumiu quantum");
 
     if (process.isFinished())
@@ -276,7 +321,6 @@ bool ProcessScheduler::runNext()
         enqueueReadyProcess(pid);
     }
 
-    applyAging();
     return true;
 }
 

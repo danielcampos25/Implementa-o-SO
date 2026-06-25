@@ -29,6 +29,10 @@ Process::Process(int pid,
     {
         throw std::invalid_argument("PID nao pode ser negativo");
     }
+    if (startTime < 0)
+    {
+        throw std::invalid_argument("Tempo de inicializacao nao pode ser negativo");
+    }
     if (!isValidPriority(priority))
     {
         throw std::invalid_argument("Prioridade invalida");
@@ -40,6 +44,19 @@ Process::Process(int pid,
     if (memoryBlocks < 0)
     {
         throw std::invalid_argument("Tamanho do conjunto de trabalho nao pode ser negativo");
+    }
+    if ((printerRequest != 0 && printerRequest != 1) ||
+        (scannerRequest != 0 && scannerRequest != 1) ||
+        (modemRequest != 0 && modemRequest != 1) ||
+        (sataDiskRequest != 0 && sataDiskRequest != 1))
+    {
+        throw std::invalid_argument("Requisicoes de recursos devem ser 0 ou 1");
+    }
+    if (isRealTime() &&
+        (printerRequest != 0 || scannerRequest != 0 ||
+         modemRequest != 0 || sataDiskRequest != 0))
+    {
+        throw std::invalid_argument("Processo de tempo real nao pode requisitar E/S");
     }
 }
 

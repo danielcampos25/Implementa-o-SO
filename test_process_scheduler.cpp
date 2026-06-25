@@ -4,6 +4,7 @@
 #include <cassert>
 #include <iostream>
 #include <optional>
+#include <stdexcept>
 #include <vector>
 
 int createSimpleProcess(ProcessScheduler &scheduler, int priority, int cpuTime)
@@ -57,6 +58,42 @@ void testProcessModel()
         invalidPriorityThrown = true;
     }
     assert(invalidPriorityThrown);
+
+    bool negativeStartTimeThrown = false;
+    try
+    {
+        Process invalidStartTime(2, -1, 1, 1, 1, 0, 0, 0, 0);
+        (void)invalidStartTime;
+    }
+    catch (const std::invalid_argument &)
+    {
+        negativeStartTimeThrown = true;
+    }
+    assert(negativeStartTimeThrown);
+
+    bool invalidResourceThrown = false;
+    try
+    {
+        Process invalidResource(2, 0, 1, 1, 1, 2, 0, 0, 0);
+        (void)invalidResource;
+    }
+    catch (const std::invalid_argument &)
+    {
+        invalidResourceThrown = true;
+    }
+    assert(invalidResourceThrown);
+
+    bool realTimeIoThrown = false;
+    try
+    {
+        Process realTimeWithIo(2, 0, 0, 1, 1, 1, 0, 0, 0);
+        (void)realTimeWithIo;
+    }
+    catch (const std::invalid_argument &)
+    {
+        realTimeIoThrown = true;
+    }
+    assert(realTimeIoThrown);
 }
 
 void testPriorityAndReadyQueues()
@@ -123,6 +160,24 @@ void testCapacityLimit()
 
     assert(createSimpleProcess(scheduler, 1, 1) == -1);
     assert(scheduler.processCount() == ProcessScheduler::MAX_PROCESSES);
+}
+
+void testValidationRules()
+{
+    ProcessScheduler scheduler;
+
+    assert(scheduler.createProcess(-1, 1, 1, 64, 0, 0, 0, 0) == -1);
+    assert(scheduler.createProcess(0, 1, 1, 64, 2, 0, 0, 0) == -1);
+    assert(scheduler.createProcess(0, 1, 1, 64, 0, -1, 0, 0) == -1);
+    assert(scheduler.createProcess(0, 1, 1, 64, 0, 0, 3, 0) == -1);
+    assert(scheduler.createProcess(0, 1, 1, 64, 0, 0, 0, 2) == -1);
+    assert(scheduler.createProcess(0, 0, 1, 64, 1, 0, 0, 0) == -1);
+    assert(scheduler.createProcess(0, 0, 1, 64, 0, 1, 0, 0) == -1);
+    assert(scheduler.createProcess(0, 0, 1, 64, 0, 0, 1, 0) == -1);
+    assert(scheduler.createProcess(0, 0, 1, 64, 0, 0, 0, 1) == -1);
+
+    assert(scheduler.processCount() == 0);
+    assert(scheduler.empty());
 }
 
 void testCpuSimulation()
@@ -204,6 +259,25 @@ void testAging()
     assert(realTimeScheduler.getProcessPriority(rt) == 0);
 }
 
+void testAgingCountsRealTimeCpuTime()
+{
+    ProcessScheduler scheduler;
+
+    const int p3 = createSimpleProcess(scheduler, 3, 1);
+    const int p2 = createSimpleProcess(scheduler, 2, 1);
+    const int rt = createSimpleProcess(scheduler, 0, ProcessScheduler::DEFAULT_AGING_THRESHOLD);
+
+    assert(scheduler.selectNextProcessId().value() == rt);
+    scheduler.runNext();
+
+    assert(scheduler.getCurrentCycle() == ProcessScheduler::DEFAULT_AGING_THRESHOLD);
+    assert(scheduler.getProcessState(rt) == ProcessState::Finished);
+    assert(scheduler.getProcessPriority(p3) == 2);
+    assert(scheduler.getProcessWaitingCycles(p3) == 0);
+    assert(scheduler.getProcessPriority(p2) == 1);
+    assert(scheduler.getProcessWaitingCycles(p2) == 0);
+}
+
 void testEvents()
 {
     ProcessScheduler scheduler;
@@ -239,9 +313,11 @@ int main()
     testPriorityAndReadyQueues();
     testRealTimeFifoAndUserPriority();
     testCapacityLimit();
+    testValidationRules();
     testCpuSimulation();
     testRunUntilComplete();
     testAging();
+    testAgingCountsRealTimeCpuTime();
     testEvents();
 
     std::cout << "All process scheduler tests passed.\n";
