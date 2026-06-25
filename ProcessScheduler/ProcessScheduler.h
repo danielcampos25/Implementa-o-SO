@@ -39,6 +39,7 @@ private:
     std::vector<Process> processes;
     std::vector<SchedulerEvent> events;
     int currentCycle;
+    int lastConsumedTime;
     int nextPid;
     int maxProcesses;
     int agingThreshold;
@@ -80,6 +81,7 @@ public:
     bool empty() const;
     std::size_t processCount() const;
     int getCurrentCycle() const;
+    int getLastConsumedTime() const;
 
     const Process &getProcess(int pid) const;
     ProcessState getProcessState(int pid) const;

@@ -35,6 +35,7 @@ ProcessScheduler::ProcessScheduler(int maxProcesses, int agingThreshold)
       processes(),
       events(),
       currentCycle(0),
+      lastConsumedTime(0),
       nextPid(0),
       maxProcesses(maxProcesses),
       agingThreshold(agingThreshold)
@@ -285,6 +286,7 @@ std::optional<int> ProcessScheduler::selectNextProcessId() const
 
 bool ProcessScheduler::runNext()
 {
+    lastConsumedTime = 0;
     std::optional<int> maybePid = popNextReadyPid();
 
     if (!maybePid.has_value())
@@ -302,12 +304,14 @@ bool ProcessScheduler::runNext()
     if (process.isRealTime())
     {
         const int consumed = process.executeUntilFinished();
+        lastConsumedTime = consumed;
         advanceWaitingCycles(consumed, pid);
         recordEvent(SchedulerEventType::Finish, pid, "Processo de tempo real finalizado");
         return true;
     }
 
     const int consumed = process.executeFor(USER_QUANTUM);
+    lastConsumedTime = consumed;
     advanceWaitingCycles(consumed, pid);
     recordEvent(SchedulerEventType::Quantum, pid, "Processo de usuario consumiu quantum");
 
@@ -377,6 +381,11 @@ std::size_t ProcessScheduler::processCount() const
 int ProcessScheduler::getCurrentCycle() const
 {
     return currentCycle;
+}
+
+int ProcessScheduler::getLastConsumedTime() const
+{
+    return lastConsumedTime;
 }
 
 const Process &ProcessScheduler::getProcess(int pid) const
