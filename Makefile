@@ -4,21 +4,23 @@ CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic
 # Arquivos de implementação comuns ao projeto
 RESOURCE_SRC = ResourceManager/ResourceManager.cpp Scheduler/scheduler.cpp
 FILESYSTEM_SRC = FileSystem/FileSystem.cpp FileSystem/FileSystemManager.cpp
+PROCESS_SRC = Process/Process.cpp ProcessScheduler/ProcessScheduler.cpp
 
 # Arquivos de teste
 TEST1 = test_resource_scheduler.cpp
 TEST2 = test_resource_scheduler2.cpp
 TEST3 = test_resource_scheduler3.cpp
 TEST_FS = test_filesystem.cpp
+TEST_PROCESS = test_process_scheduler.cpp
 
-OBJ = $(RESOURCE_SRC:.cpp=.o) $(FILESYSTEM_SRC:.cpp=.o)
+OBJ = $(RESOURCE_SRC:.cpp=.o) $(FILESYSTEM_SRC:.cpp=.o) $(PROCESS_SRC:.cpp=.o)
 
 # Alvo padrão: compila todos os testes
-all: test_resource_scheduler test_resource_scheduler2 test_resource_scheduler3 test_filesystem
+all: test_resource_scheduler test_resource_scheduler2 test_resource_scheduler3 test_filesystem test_process_scheduler
 
 # Executa todos os testes sequencialmente
 run: all
-	./test_resource_scheduler && ./test_resource_scheduler2 && ./test_resource_scheduler3 && ./test_filesystem
+	./test_resource_scheduler && ./test_resource_scheduler2 && ./test_resource_scheduler3 && ./test_filesystem && ./test_process_scheduler
 
 # Compila o primeiro teste
 test_resource_scheduler: $(RESOURCE_SRC) $(TEST1)
@@ -36,6 +38,10 @@ test_resource_scheduler3: $(RESOURCE_SRC) $(TEST3)
 test_filesystem: $(FILESYSTEM_SRC) $(TEST_FS)
 	$(CXX) $(CXXFLAGS) $(FILESYSTEM_SRC) $(TEST_FS) -o $@
 
+# Compila o teste do ProcessScheduler
+test_process_scheduler: $(PROCESS_SRC) $(TEST_PROCESS)
+	$(CXX) $(CXXFLAGS) $(PROCESS_SRC) $(TEST_PROCESS) -o $@
+
 # Limpa os executáveis de teste
 clean:
-	rm -f test_resource_scheduler test_resource_scheduler2 test_resource_scheduler3 test_filesystem $(OBJ)
+	rm -f test_resource_scheduler test_resource_scheduler2 test_resource_scheduler3 test_filesystem test_process_scheduler $(OBJ)

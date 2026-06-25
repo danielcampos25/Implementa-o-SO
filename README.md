@@ -139,6 +139,80 @@ O `Scheduler` gerencia a fila `blockedIO` de processos bloqueados por E/S.
 - Adicionar logs mais detalhados de alocação e desbloqueio.
 - Incluir um módulo de execução de processos com estado READY/BLOCKED/RUNNING.
 
+## Módulo de Processos e Filas Prontas
+
+Esta feature adiciona uma simulação sequencial de processos prontos para CPU sem alterar o `Scheduler/` usado pelo `ResourceManager`.
+
+Arquivos adicionados:
+
+- `Process/Process.h`
+- `Process/Process.cpp`
+- `ProcessScheduler/ProcessScheduler.h`
+- `ProcessScheduler/ProcessScheduler.cpp`
+- `test_process_scheduler.cpp`
+
+Comportamentos implementados:
+
+- PIDs sequenciais iniciando em 0.
+- Processo de tempo real com prioridade 0.
+- Processos de usuário com prioridades 1, 2 e 3.
+- Fila de tempo real FIFO.
+- Seleção de CPU na ordem: tempo real, usuário 1, usuário 2, usuário 3.
+- Tempo real executa até finalizar, sem preempção.
+- Usuário executa quantum de 1 unidade por despacho.
+- Processos de usuário inacabados retornam para a fila pronta.
+- Aging após 5 ciclos de espera: prioridade 3 sobe para 2, prioridade 2 sobe para 1.
+- Limite de 1000 processos aceitos pelo escalonador.
+- Processos com tempo total de CPU zero são finalizados sem despacho.
+
+### Como validar o novo módulo
+
+Compile todos os testes:
+
+```bash
+make
+```
+
+Execute somente o teste de processos e filas:
+
+```bash
+./test_process_scheduler
+```
+
+Execute todos os testes, incluindo recursos, arquivos e processos:
+
+```bash
+make run
+```
+
+Saída observada para o teste novo:
+
+```text
+===== ProcessScheduler Module Tests =====
+All process scheduler tests passed.
+```
+
+Comparação com os critérios de aceite:
+
+- Prioridade 0 executa antes dos usuários: coberto por `testRealTimeFifoAndUserPriority`.
+- Dois processos de tempo real seguem FIFO: coberto por `testRealTimeFifoAndUserPriority`.
+- Tempo real não sofre preempção: coberto por `testCpuSimulation`.
+- Usuário consome no máximo 1 unidade por despacho: coberto por `testCpuSimulation`.
+- Prioridade de usuário respeita 1 antes de 2 e 2 antes de 3: coberto por `testRealTimeFifoAndUserPriority`.
+- Aging promove prioridades 3 para 2 e 2 para 1 após 5 ciclos: coberto por `testAging`.
+- Mais de 1000 processos é rejeitado: coberto por `testCapacityLimit`.
+- Testes existentes de `ResourceManager/` e `FileSystem/` continuam no alvo `make run`.
+
+Limitações:
+
+- `startTime` é armazenado no processo, mas admissão atrasada por tempo de inicialização fica para integração futura com parser/dispatcher.
+- Memória, recursos de E/S e sistema de arquivos não são reimplementados por este módulo.
+
+Próximos passos recomendados:
+
+- Integrar o `ProcessScheduler` ao dispatcher principal quando o parser de entrada estiver definido.
+- Conectar campos de requisição de recursos aos módulos de E/S sem alterar a API pública existente do `ResourceManager`.
+
 ---
 
 Este README documenta o projeto e a lógica atual. Ele pode ser ampliado com diagramas de estado, exemplos de uso e casos de teste adicionais se necessário.
