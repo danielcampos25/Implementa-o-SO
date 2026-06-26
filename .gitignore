@@ -22,6 +22,7 @@ test_resource_scheduler3
 test_filesystem
 test_process_scheduler
 test_dispatcher
+test_process_input_loader
 .DS_Store
 Thumbs.db
 *.tmp

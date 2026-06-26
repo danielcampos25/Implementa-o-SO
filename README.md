@@ -213,6 +213,63 @@ Próximos passos recomendados:
 - Integrar o `ProcessScheduler` ao dispatcher principal quando o parser de entrada estiver definido.
 - Conectar campos de requisição de recursos aos módulos de E/S sem alterar a API pública existente do `ResourceManager`.
 
+## Módulo de Carregamento de Entrada de Processos
+
+Esta feature adiciona o módulo `ProcessInput/`, responsável por carregar um arquivo `processes.txt` e transformar cada linha válida em uma entrada `ProcessWorkloadEntry` para uso posterior pelo `Dispatcher`.
+
+Formato esperado por linha:
+
+```text
+startTime priority processorTime memoryBlocks printerRequest scannerRequest modemRequest sataDiskRequest
+```
+
+Comportamentos implementados:
+
+- Leitura linha por linha de um arquivo de processos.
+- Ignora linhas vazias ou apenas com espaços.
+- Aceita espaços extras entre campos.
+- Exige exatamente 8 campos por linha não vazia.
+- Converte todos os campos para inteiros.
+- Preserva a ordem original das linhas válidas.
+- Retorna erro observável para arquivo inexistente, falha de leitura, quantidade incorreta de colunas e campo numérico inválido.
+- Não cria `Process`, não admite processos, não executa o escalonador e não valida regras de domínio como prioridade, quantum, aging, limite de processos, memória ou recursos.
+
+### Como validar o carregador
+
+Compile todos os testes:
+
+```bash
+make all
+```
+
+Execute somente o teste do carregador:
+
+```bash
+./test_process_input_loader
+```
+
+Execute todos os testes:
+
+```bash
+make run
+```
+
+Saída observada para o teste do carregador:
+
+```text
+===== Process Input Loader Tests =====
+All process input loader tests passed.
+```
+
+Arquivos de exemplo usados nos testes:
+
+- `tests/input/processes_valid.txt`
+- `tests/input/processes_blank_lines.txt`
+- `tests/input/processes_same_start_time.txt`
+- `tests/input/processes_missing_column.txt`
+- `tests/input/processes_extra_column.txt`
+- `tests/input/processes_invalid_number.txt`
+
 ---
 
 Este README documenta o projeto e a lógica atual. Ele pode ser ampliado com diagramas de estado, exemplos de uso e casos de teste adicionais se necessário.
