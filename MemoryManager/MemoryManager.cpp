@@ -3,7 +3,7 @@
 #include <vector>
 #include <unordered_map>
 #include <utility>
-#include <exception>
+#include <stdexcept>
 
 //*Feito na mão, com consulta no Gemini para sugetões e correção de erros
 
