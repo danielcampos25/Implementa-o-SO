@@ -5,7 +5,7 @@
 #include <utility>
 #include <exception>
 
-//*Feito na mão, com consulta no Gemini para correção de erros
+//*Feito na mão, com consulta no Gemini para sugetões e correção de erros
 
 // | --------------------------------------------
 // | Geral
