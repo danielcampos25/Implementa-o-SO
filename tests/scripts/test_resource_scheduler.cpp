@@ -1,5 +1,5 @@
-#include "ResourceManager/ResourceManager.h"
-#include "Scheduler/scheduler.h"
+#include "./../../ResourceManager/ResourceManager.h"
+#include "./../../Scheduler/scheduler.h"
 #include <iostream>
 
 /*
