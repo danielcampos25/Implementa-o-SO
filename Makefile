@@ -7,6 +7,7 @@ FILESYSTEM_SRC = FileSystem/FileSystem.cpp FileSystem/FileSystemManager.cpp
 PROCESS_SRC = Process/Process.cpp ProcessScheduler/ProcessScheduler.cpp
 DISPATCHER_SRC = Dispatcher/Dispatcher.cpp $(PROCESS_SRC)
 PROCESS_INPUT_SRC = ProcessInput/ProcessInputLoader.cpp $(DISPATCHER_SRC)
+MAIN_SRC = main.cpp $(PROCESS_INPUT_SRC)
 
 # Arquivos de teste
 TEST1 = test_resource_scheduler.cpp
@@ -52,6 +53,9 @@ test_dispatcher: $(DISPATCHER_SRC) $(TEST_DISPATCHER)
 test_process_input_loader: $(PROCESS_INPUT_SRC) $(TEST_PROCESS_INPUT)
 	$(CXX) $(CXXFLAGS) $(PROCESS_INPUT_SRC) $(TEST_PROCESS_INPUT) -o $@
 
-# Limpa os executáveis de teste
+dispatcher: $(MAIN_SRC)
+	$(CXX) $(CXXFLAGS) $(MAIN_SRC) -o $@
+
+# Limpa os executáveis de teste e o executável principal
 clean:
-	rm -f test_resource_scheduler test_resource_scheduler2 test_resource_scheduler3 test_filesystem test_process_scheduler test_dispatcher test_process_input_loader $(OBJ)
+	rm -f test_resource_scheduler test_resource_scheduler2 test_resource_scheduler3 test_filesystem test_process_scheduler test_dispatcher test_process_input_loader dispatcher $(OBJ)

@@ -270,6 +270,44 @@ Arquivos de exemplo usados nos testes:
 - `tests/input/processes_extra_column.txt`
 - `tests/input/processes_invalid_number.txt`
 
+## Fluxo Principal do Dispatcher
+
+O executável principal conecta o arquivo de processos ao carregador, ao dispatcher e ao escalonador de processos.
+
+Compile o executável principal:
+
+```bash
+make dispatcher
+```
+
+Execute a simulação com um arquivo de processos:
+
+```bash
+./dispatcher tests/input/processes_valid.txt
+```
+
+Formato esperado do arquivo:
+
+```text
+startTime priority processorTime memoryBlocks printerRequest scannerRequest modemRequest sataDiskRequest
+```
+
+A saída é composta pelos eventos do dispatcher, por exemplo:
+
+```text
+cycle=0 type=admission pid=0 priority=1 remaining=2 message=Processo admitido
+cycle=1 type=dispatch pid=0 priority=1 remaining=2 message=Processo despachado
+cycle=1 type=quantum pid=0 priority=1 remaining=1 message=Processo de usuario consumiu quantum
+```
+
+Se o comando for chamado sem exatamente um argumento, ele exibe:
+
+```text
+Uso: ./dispatcher <processes.txt>
+```
+
+O alvo `make run` continua executando os testes existentes do projeto.
+
 ---
 
 Este README documenta o projeto e a lógica atual. Ele pode ser ampliado com diagramas de estado, exemplos de uso e casos de teste adicionais se necessário.

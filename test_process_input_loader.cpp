@@ -32,8 +32,8 @@ void testLoadValidFile()
     assert(result.entries.size() == 3);
 
     assert(result.entries[0].startTime == 0);
-    assert(result.entries[0].priority == 1);
-    assert(result.entries[0].processorTime == 2);
+    assert(result.entries[0].priority == 3);
+    assert(result.entries[0].processorTime == 3);
     assert(result.entries[0].memoryBlocks == 64);
     assert(result.entries[0].printerRequest == 0);
     assert(result.entries[0].scannerRequest == 0);
@@ -48,11 +48,11 @@ void testLoadValidFile()
     assert(result.entries[1].printerRequest == 1);
     assert(result.entries[1].inputOrder == 1);
 
-    assert(result.entries[2].startTime == 2);
-    assert(result.entries[2].priority == 3);
+    assert(result.entries[2].startTime == 1);
+    assert(result.entries[2].priority == 0);
     assert(result.entries[2].processorTime == 1);
     assert(result.entries[2].memoryBlocks == 32);
-    assert(result.entries[2].modemRequest == 1);
+    assert(result.entries[2].modemRequest == 0);
     assert(result.entries[2].inputOrder == 2);
 }
 

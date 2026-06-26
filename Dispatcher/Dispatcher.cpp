@@ -81,7 +81,17 @@ void Dispatcher::recordEvent(DispatcherEventType type,
                              int remainingTime,
                              const std::string &message)
 {
-    events.push_back({currentCycle, type, pid, priority, remainingTime, message});
+    recordEventAtCycle(currentCycle, type, pid, priority, remainingTime, message);
+}
+
+void Dispatcher::recordEventAtCycle(int cycle,
+                                    DispatcherEventType type,
+                                    int pid,
+                                    int priority,
+                                    int remainingTime,
+                                    const std::string &message)
+{
+    events.push_back({cycle, type, pid, priority, remainingTime, message});
 }
 
 bool Dispatcher::hasPendingProcess() const
@@ -167,7 +177,7 @@ void Dispatcher::admitEligibleProcesses()
     }
 }
 
-void Dispatcher::forwardSchedulerEvents()
+void Dispatcher::forwardSchedulerEvents(int cycleOffset)
 {
     const std::vector<SchedulerEvent> &schedulerEvents = scheduler.getEvents();
 
@@ -180,11 +190,12 @@ void Dispatcher::forwardSchedulerEvents()
             continue;
         }
 
-        recordEvent(toDispatcherEventType(event.type),
-                    event.pid,
-                    event.priority,
-                    event.remainingTime,
-                    event.message);
+        recordEventAtCycle(event.cycle + cycleOffset,
+                           toDispatcherEventType(event.type),
+                           event.pid,
+                           event.priority,
+                           event.remainingTime,
+                           event.message);
     }
 }
 
@@ -207,15 +218,18 @@ bool Dispatcher::runNext()
 
     if (scheduler.hasReadyProcess())
     {
+        const int dispatcherCycleBeforeRun = currentCycle;
+        const int schedulerCycleBeforeRun = scheduler.getCurrentCycle();
         const bool ran = scheduler.runNext();
+        const int cycleOffset = dispatcherCycleBeforeRun - schedulerCycleBeforeRun;
         if (!ran)
         {
-            forwardSchedulerEvents();
+            forwardSchedulerEvents(cycleOffset);
             return false;
         }
 
         currentCycle += scheduler.getLastConsumedTime();
-        forwardSchedulerEvents();
+        forwardSchedulerEvents(cycleOffset);
         admitEligibleProcesses();
         recordCompletionIfNeeded();
         return true;
@@ -226,12 +240,14 @@ bool Dispatcher::runNext()
         const int nextStartTime = nextPendingStartTime();
         if (nextStartTime > currentCycle)
         {
+            const int idleCycle = currentCycle;
             currentCycle = nextStartTime;
-            recordEvent(DispatcherEventType::IdleAdvance,
-                        -1,
-                        -1,
-                        -1,
-                        "Sem processo pronto; avancando ate a proxima chegada");
+            recordEventAtCycle(idleCycle,
+                               DispatcherEventType::IdleAdvance,
+                               -1,
+                               -1,
+                               -1,
+                               "Sem processo pronto; avancando ate o ciclo " + std::to_string(nextStartTime));
         }
 
         admitEligibleProcesses();

@@ -66,9 +66,15 @@ private:
                      int priority,
                      int remainingTime,
                      const std::string &message);
+    void recordEventAtCycle(int cycle,
+                            DispatcherEventType type,
+                            int pid,
+                            int priority,
+                            int remainingTime,
+                            const std::string &message);
     bool hasPendingProcess() const;
     int nextPendingStartTime() const;
-    void forwardSchedulerEvents();
+    void forwardSchedulerEvents(int cycleOffset);
     void recordCompletionIfNeeded();
 
 public:

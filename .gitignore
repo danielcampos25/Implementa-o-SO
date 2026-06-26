@@ -23,6 +23,7 @@ test_filesystem
 test_process_scheduler
 test_dispatcher
 test_process_input_loader
+dispatcher
 .DS_Store
 Thumbs.db
 *.tmp

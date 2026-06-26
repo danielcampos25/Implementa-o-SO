@@ -131,6 +131,10 @@ void testIdleAdvanceToFirstFutureStart()
     assert(dispatcher.admittedCount() == 1);
     assert(dispatcher.pendingCount() == 0);
     assert(countEvents(dispatcher, DispatcherEventType::IdleAdvance) == 1);
+
+    const std::vector<DispatcherEvent> idleEvents = eventsOfType(dispatcher, DispatcherEventType::IdleAdvance);
+    assert(idleEvents[0].cycle == 0);
+    assert(idleEvents[0].message.find("ciclo 4") != std::string::npos);
 }
 
 void testGapHandlingAndCompletion()
@@ -182,6 +186,50 @@ void testZeroCpuProcessFinishesAtAdmission()
     assert(dispatcher.getScheduler().empty());
 }
 
+void testEventCycleSemantics()
+{
+    Dispatcher userDispatcher({entry(0, 3, 1)});
+    userDispatcher.runUntilComplete();
+
+    const std::vector<DispatcherEvent> userAdmissions = eventsOfType(userDispatcher, DispatcherEventType::Admission);
+    const std::vector<DispatcherEvent> userDispatches = eventsOfType(userDispatcher, DispatcherEventType::Dispatch);
+    const std::vector<DispatcherEvent> userQuantums = eventsOfType(userDispatcher, DispatcherEventType::Quantum);
+    const std::vector<DispatcherEvent> userFinishes = eventsOfType(userDispatcher, DispatcherEventType::Finish);
+    const std::vector<DispatcherEvent> userCompletions = eventsOfType(userDispatcher, DispatcherEventType::Completion);
+
+    assert(userAdmissions[0].cycle == 0);
+    assert(userDispatches[0].cycle == 0);
+    assert(userQuantums[0].cycle == 1);
+    assert(userFinishes[0].cycle == 1);
+    assert(userCompletions[0].cycle == 1);
+
+    Dispatcher realTimeDispatcher({entry(1, 0, 2)});
+    realTimeDispatcher.runUntilComplete();
+
+    const std::vector<DispatcherEvent> realTimeIdleEvents = eventsOfType(realTimeDispatcher, DispatcherEventType::IdleAdvance);
+    const std::vector<DispatcherEvent> realTimeAdmissions = eventsOfType(realTimeDispatcher, DispatcherEventType::Admission);
+    const std::vector<DispatcherEvent> realTimeDispatches = eventsOfType(realTimeDispatcher, DispatcherEventType::Dispatch);
+    const std::vector<DispatcherEvent> realTimeFinishes = eventsOfType(realTimeDispatcher, DispatcherEventType::Finish);
+    const std::vector<DispatcherEvent> realTimeCompletions = eventsOfType(realTimeDispatcher, DispatcherEventType::Completion);
+
+    assert(realTimeIdleEvents[0].cycle == 0);
+    assert(realTimeAdmissions[0].cycle == 1);
+    assert(realTimeDispatches[0].cycle == 1);
+    assert(realTimeFinishes[0].cycle == 3);
+    assert(realTimeCompletions[0].cycle == 3);
+
+    Dispatcher invalidDispatcher({entry(2, 4, 1)});
+    invalidDispatcher.runUntilComplete();
+
+    const std::vector<DispatcherEvent> invalidIdleEvents = eventsOfType(invalidDispatcher, DispatcherEventType::IdleAdvance);
+    const std::vector<DispatcherEvent> rejections = eventsOfType(invalidDispatcher, DispatcherEventType::Rejection);
+    const std::vector<DispatcherEvent> invalidCompletions = eventsOfType(invalidDispatcher, DispatcherEventType::Completion);
+
+    assert(invalidIdleEvents[0].cycle == 0);
+    assert(rejections[0].cycle == 2);
+    assert(invalidCompletions[0].cycle == 2);
+}
+
 void testObservableEventsAndFormatting()
 {
     Dispatcher dispatcher({entry(0, 1, 2), entry(2, 4, 1), entry(3, 1, 1)});
@@ -224,6 +272,7 @@ int main()
     testAdmissionAfterLongRealTimeExecution();
     testEmptyWorkloadCompletes();
     testZeroCpuProcessFinishesAtAdmission();
+    testEventCycleSemantics();
     testObservableEventsAndFormatting();
 
     std::cout << "All dispatcher tests passed.\n";
