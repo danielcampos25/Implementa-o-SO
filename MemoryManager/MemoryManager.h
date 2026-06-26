@@ -7,6 +7,8 @@
 
 //*Feito na mão, com consulta no Gemini para correção de erros
 
+typedef enum { REAL_TIME = 0, USER = 1 } ProcessType;
+
 typedef std::pair<int, int> int_pair;
 
 struct FrameEntry {
@@ -62,45 +64,51 @@ class MemoryManager {
         std::vector<FrameEntry> memory_table_rt = std::vector<FrameEntry>(N_FRAMES_RT);
         std::vector<FrameEntry> memory_table_usr = std::vector<FrameEntry>(N_FRAMES_USR);
 
-        // std::vector<WorkingSet> working_sets_usr;
-        std::unordered_map<int, WorkingSet> working_sets_usr;
+        std::unordered_map<int, WorkingSet> working_sets;
 
-        // Aloca uma página na memória de processos de usuário no index solicitado, independente de estar vazia ou não
-        void alloc_page_usr(int pid, int page_number, int index);
+        // Aloca uma página na memória no index solicitado, independente de estar vazia ou não
+        void alloc_page(int pid, int page_number, int index, ProcessType process_type);
 
-        // Tenta alocar uma página na memória de processos de usuário no primeiro frame disponível
-        bool alloc_firstfit_usr(int pid, int page_number);
+        // Tenta alocar uma página na memória no primeiro frame disponível
+        bool alloc_firstfit(int pid, int page_number, ProcessType process_type);
 
         // Aloca uma página no working set do processo, substituindo a página local referenciada há mais tempo (LRU)
-        void substitute_local_usr(int pid, int page_number);
+        void substitute_local(int pid, int page_number, ProcessType process_type);
         
         // Lida com falta de página. Aloca na memória:
         // no primeiro espaço livre, se possível; no lugar da página referenciada há mais tempo, se não
-        void page_fault_usr(int pid, int page_number);
+        void page_fault(int pid, int page_number, ProcessType process_type);
+
+        // Retorna uma referência para a tabela de memória correspondente: de processos de usuário ou de processos de tempo real
+        std::vector<FrameEntry>& get_memory_table(ProcessType process_type);
 
     public:
         MemoryManager() {}
 
         /**
-         * @brief Verifica se a memória de processos de usuário está cheia.
+         * @brief Verifica se a memória de processos está cheia.
+         * @param process_type Qual tabela de memória: USER (tabela de memória de processos de usuário)
+         * ou REAL_TIME (tabela de memória de processos de tempo real).
          * @return True se a memória de processos de usuário está cheia; False se há pelo menos um Frame disponível.
          */
-        bool is_usr_memory_full();
+        bool is_memory_full(ProcessType process_type);
 
         /**
          * @brief Referencia uma página na memória virtual.
          * @param pid PID do processo que está referenciando a página.
          * @param page_number Número da página referenciada.
+         * @param process_type Tipo do processo dono da página. USER (processo de usuário) ou REAL_TIME (processo de tempo real).
          * @return 0 se a página estava na memória; 1 se houve Page Fault.
          */
-        int ref_page_usr(int pid, int page_number);
+        int ref_page(int pid, int page_number, ProcessType process_type);
         
-
+        
         /**
          * @brief Libera a memória ocupada por um processo.
          * @param pid ID do processo cuja memória será liberada.
+         * @param process_type Tipo do processo. USER (processo de usuário) ou REAL_TIME (processo de tempo real).
          */
-        void free_process_memory(int pid);
+        void free_process_memory(int pid, ProcessType process_type);
 };
 
 #endif

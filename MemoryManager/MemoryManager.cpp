@@ -11,8 +11,20 @@
 // | Geral
 // | --------------------------------------------
 
-bool MemoryManager::is_usr_memory_full() {
-    for (FrameEntry frame : this->memory_table_usr) {
+std::vector<FrameEntry>& MemoryManager::get_memory_table(ProcessType process_type) {
+    if (process_type == USER) {
+        return this->memory_table_usr;
+    } else { // process_type == REAL_TIME
+        return this->memory_table_rt;
+    }
+}
+
+
+bool MemoryManager::is_memory_full(ProcessType process_type) {
+
+    const std::vector<FrameEntry>& memory_table = this->get_memory_table(process_type);
+
+    for (FrameEntry frame : memory_table) {
         if (frame.pid == -1 && frame.page_number == -1)
             return false;
     }
@@ -20,17 +32,19 @@ bool MemoryManager::is_usr_memory_full() {
 }
 
 
-void MemoryManager::free_process_memory(int pid) {
+void MemoryManager::free_process_memory(int pid, ProcessType process_type) {
+
+    std::vector<FrameEntry>& memory_table = this->get_memory_table(process_type);
 
     // Remover da memória as páginas do processo
-    for (int i = 0; i < this->memory_table_usr.size(); i++) {
-        if (this->memory_table_usr[i].pid == pid) {
-            memory_table_usr[i] = FrameEntry{-1, -1};
+    for (int i = 0; i < memory_table.size(); i++) {
+        if (memory_table[i].pid == pid) {
+            memory_table[i] = FrameEntry{-1, -1};
         }
     }
 
     // Remover WorkingSet do processo
-    this->working_sets_usr.erase(pid);
+    this->working_sets.erase(pid);
 }
 
 // \ --------------------------------------------
@@ -41,12 +55,14 @@ void MemoryManager::free_process_memory(int pid) {
 // | Referência e Falta de Página
 // | --------------------------------------------
 
-int MemoryManager::ref_page_usr(int pid, int page_number) {
+int MemoryManager::ref_page(int pid, int page_number, ProcessType process_type) {
+
+    const std::vector<FrameEntry>& memory_table = this->get_memory_table(process_type);
 
     int fault = 1;
     
     // Procura a página na memória
-    for (const FrameEntry& frame : this->memory_table_usr) {
+    for (const FrameEntry& frame : memory_table) {
         if (frame.pid == pid && frame.page_number == page_number) {
             fault = 0;
             break;
@@ -55,20 +71,20 @@ int MemoryManager::ref_page_usr(int pid, int page_number) {
     
     // Falta de página
     if (fault) {
-        this->page_fault_usr(pid, page_number);
+        this->page_fault(pid, page_number, process_type);
     }
     
     // Incrementar contador LRU de todas as páginas do working set
-    this->working_sets_usr[pid].inc_all_counters();
+    this->working_sets[pid].inc_all_counters();
     
     // Zerar contador LRU da página referenciada
-    this->working_sets_usr[pid].reset_counter(page_number);
+    this->working_sets[pid].reset_counter(page_number);
 
     return fault;
 }
 
 
-void MemoryManager::page_fault_usr(int pid, int page_number) {
+void MemoryManager::page_fault(int pid, int page_number, ProcessType process_type) {
     
     //>TO-DO: obter esse valor da tabela de processos OU colocar como parâmetro OU manter um vetor de max_working_sets na classe
     // Algo como:
@@ -77,26 +93,26 @@ void MemoryManager::page_fault_usr(int pid, int page_number) {
     
     
     // Verificar se o processo está no mapa de Working Sets
-    auto it = this->working_sets_usr.find(pid);
+    auto it = this->working_sets.find(pid);
     
     // Primeira referência do processo
-    if (it == this->working_sets_usr.end()) {
-        this->working_sets_usr.emplace(pid, WorkingSet());
-        this->alloc_firstfit_usr(pid, page_number);
+    if (it == this->working_sets.end()) {
+        this->working_sets.emplace(pid, WorkingSet());
+        this->alloc_firstfit(pid, page_number, process_type);
         return;
     }
 
     
-    int working_set_size = this->working_sets_usr[pid].size();
+    int working_set_size = this->working_sets[pid].size();
     
-    if (working_set_size < max_working_set && !this->is_usr_memory_full()) {
+    if (working_set_size < max_working_set && !this->is_memory_full(process_type)) {
         // Working Set não cheio E tem espaço na memória
         // Aloca no primeiro frame disponível
-        this->alloc_firstfit_usr(pid, page_number);
+        this->alloc_firstfit(pid, page_number, process_type);
     } else {
         // Sem espaço na memória OU working set com tamanho máximo
         // Substitui a página referenciada há mais tempo
-        this->substitute_local_usr(pid, page_number);
+        this->substitute_local(pid, page_number, process_type);
     }
 
     return;
@@ -110,19 +126,25 @@ void MemoryManager::page_fault_usr(int pid, int page_number) {
 // | Alocação
 // | --------------------------------------------
 
-void MemoryManager::alloc_page_usr(int pid, int page_number, int index) {
-    this->memory_table_usr[index] = FrameEntry{pid, page_number};
+void MemoryManager::alloc_page(int pid, int page_number, int index, ProcessType process_type) {
+
+    std::vector<FrameEntry>& memory_table = this->get_memory_table(process_type);
+    
+    memory_table[index] = FrameEntry{pid, page_number};
 }
 
 
-bool MemoryManager::alloc_firstfit_usr(int pid, int page_number) {
-    for (int i = 0; i < (this->memory_table_usr.size()); i++) {
+bool MemoryManager::alloc_firstfit(int pid, int page_number, ProcessType process_type) {
+
+    const std::vector<FrameEntry>& memory_table = this->get_memory_table(process_type);
+    
+    for (int i = 0; i < (memory_table.size()); i++) {
         if (
-            this->memory_table_usr[i].pid == -1
-            && this->memory_table_usr[i].page_number == -1
+            memory_table[i].pid == -1
+            && memory_table[i].page_number == -1
         ) {
-            this->alloc_page_usr(pid, page_number, i);
-            this->working_sets_usr[pid].pages_in_mem.push_back(int_pair(page_number, 0));
+            this->alloc_page(pid, page_number, i, process_type);
+            this->working_sets[pid].pages_in_mem.push_back(int_pair(page_number, 0));
             return true;
         }
     }
@@ -130,14 +152,16 @@ bool MemoryManager::alloc_firstfit_usr(int pid, int page_number) {
 }
 
 
-void MemoryManager::substitute_local_usr(int pid, int page_number) {
+void MemoryManager::substitute_local(int pid, int page_number, ProcessType process_type) {
+
+    const std::vector<FrameEntry>& memory_table = this->get_memory_table(process_type);
 
     int max = 0;
     int replaced_page = -1;
     int replaced_page_index = -1;
 
     // Encontrar página referenciada há mais tempo
-    for (const int_pair& page : this->working_sets_usr[pid].pages_in_mem) {
+    for (const int_pair& page : this->working_sets[pid].pages_in_mem) {
         if (page.second >= max) {
             max = page.second;
             replaced_page = page.first;
@@ -149,8 +173,8 @@ void MemoryManager::substitute_local_usr(int pid, int page_number) {
         
         
     // Encontrar a posição na memória da página a ser substituída
-    for (int i = 0; i < this->memory_table_usr.size(); i++) {
-        if (this->memory_table_usr[i].page_number == replaced_page) {
+    for (int i = 0; i < memory_table.size(); i++) {
+        if (memory_table[i].page_number == replaced_page) {
             replaced_page_index = i;
             break;
         }
@@ -161,13 +185,13 @@ void MemoryManager::substitute_local_usr(int pid, int page_number) {
 
 
     // Remover do WorkingSet a página a ser substituída
-    this->working_sets_usr[pid].remove_page(replaced_page);
+    this->working_sets[pid].remove_page(replaced_page);
 
     // Alocar nova página
-    this->alloc_page_usr(pid, page_number, replaced_page_index);
+    this->alloc_page(pid, page_number, replaced_page_index, process_type);
 
     // Inserir nova página no WorkingSet do processo
-    this->working_sets_usr[pid].pages_in_mem.push_back(int_pair(page_number, 0));
+    this->working_sets[pid].pages_in_mem.push_back(int_pair(page_number, 0));
 }
 
 
