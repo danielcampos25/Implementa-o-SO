@@ -7,14 +7,15 @@ CXXFLAGS = -std=c++17 #-Wall -Wextra -pedantic
 
 # Arquivos de implementação comuns ao projeto
 SRC = $(RESOURCE_SRC) $(MEMORY_SRC) $(FILESYSTEM_SRC)
+MAIN = main.cpp
 OBJ = $(SRC:.cpp=.o)
 BIN = bin
 EXE = $(BIN)/g2_OS
 
-# Compilar p projeto
-compile: $(SRC)
+# Compilar o projeto
+compile: $(SRC) $(main)
 	@mkdir -p $(BIN)
-	$(CXX) $(CXXFLAGS) $(SRC) -o $(EXE)
+	$(CXX) $(CXXFLAGS) $(SRC) $(MAIN) -o $(EXE)
 
 
 # Rodar o projeto (ainda não faz nada, não tem main)
