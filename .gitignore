@@ -5,6 +5,7 @@ AGENTS.md
 specs/
 
 # C++ build artifacts
+/bin
 build/
 bin/
 obj/
