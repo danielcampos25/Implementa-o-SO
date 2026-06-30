@@ -1,4 +1,5 @@
 #include "Dispatcher/Dispatcher.h"
+#include "FileSystem/FileSystemManager.h"
 #include "ProcessInput/ProcessInputLoader.h"
 #include "ReferenceStringInput/ReferenceStringInputLoader.h"
 
@@ -46,6 +47,11 @@ void printReferenceStringCountMismatch(std::size_t processCount, std::size_t ref
               << processCount
               << ")\n";
 }
+
+void printFileSystemLoadError(const char *path)
+{
+    std::cerr << "Erro ao carregar arquivo do sistema de arquivos: " << path << '\n';
+}
 }
 
 int main(int argc, char *argv[])
@@ -59,7 +65,6 @@ int main(int argc, char *argv[])
     const char *processInputPath = argv[1];
     const char *fileSystemInputPath = argv[2];
     const char *referenceStringInputPath = argv[3];
-    (void)fileSystemInputPath;
 
     const ProcessInputLoadResult processLoadResult = ProcessInputLoader::loadFromFile(processInputPath);
     if (!processLoadResult.success)
@@ -83,12 +88,27 @@ int main(int argc, char *argv[])
         return ERROR_EXIT_CODE;
     }
 
+    FileSystemManager fileSystemManager;
+    if (!fileSystemManager.loadDiskConfiguration(fileSystemInputPath))
+    {
+        printFileSystemLoadError(fileSystemInputPath);
+        return ERROR_EXIT_CODE;
+    }
+
+    for (const ProcessWorkloadEntry &entry : processLoadResult.entries)
+    {
+        fileSystemManager.registerProcess(entry.inputOrder, entry.priority);
+    }
+
     Dispatcher dispatcher(processLoadResult.entries, referenceStringLoadResult.referenceStrings);
     dispatcher.runUntilComplete();
     dispatcher.printEvents(std::cout);
     if (!dispatcher.hasSimulationError())
     {
         dispatcher.printPageFaultSummary(std::cout);
+        fileSystemManager.executeAllOperations();
+        fileSystemManager.printResults();
+        fileSystemManager.printFinalDiskMap();
     }
 
     return SUCCESS_EXIT_CODE;

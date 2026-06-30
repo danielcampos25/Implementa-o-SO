@@ -18,7 +18,7 @@ PROCESS_SRC = Process/Process.cpp ProcessScheduler/ProcessScheduler.cpp $(RESOUR
 DISPATCHER_SRC = Dispatcher/Dispatcher.cpp $(PROCESS_SRC) $(MEMORY_SRC)
 PROCESS_INPUT_SRC = ProcessInput/ProcessInputLoader.cpp $(DISPATCHER_SRC)
 REFERENCE_STRING_INPUT_SRC = ReferenceStringInput/ReferenceStringInputLoader.cpp
-MAIN_SRC = main.cpp $(PROCESS_INPUT_SRC) $(REFERENCE_STRING_INPUT_SRC)
+MAIN_SRC = main.cpp $(PROCESS_INPUT_SRC) $(REFERENCE_STRING_INPUT_SRC) $(FILESYSTEM_SRC)
 
 TEST_RESOURCE_1 = test_resource_scheduler.cpp
 TEST_RESOURCE_2 = test_resource_scheduler2.cpp
@@ -27,6 +27,7 @@ TEST_PROCESS = test_process_scheduler.cpp
 TEST_DISPATCHER = test_dispatcher.cpp
 TEST_PROCESS_INPUT = test_process_input_loader.cpp
 TEST_REFERENCE_STRING_INPUT = test_reference_string_input_loader.cpp
+TEST_MAIN_FILESYSTEM_FLOW = tests/scripts/test_main_filesystem_flow.cpp
 TEST_FS = tests/scripts/test_filesystem.cpp
 TEST_MEM1 = tests/scripts/test_memory1.cpp
 TEST_MEM2 = tests/scripts/test_memory2.cpp
@@ -35,7 +36,7 @@ OBJ = $(RESOURCE_SRC:.cpp=.o) $(MEMORY_SRC:.cpp=.o) $(FILESYSTEM_SRC:.cpp=.o) $(
 
 .PHONY: all compile run clean all_tests test_scheduler_all test_memory_all
 
-all: compile test_process_scheduler test_dispatcher test_process_input_loader test_reference_string_input_loader
+all: compile test_process_scheduler test_dispatcher test_process_input_loader test_reference_string_input_loader test_main_filesystem_flow
 
 compile: $(MAIN_SRC)
 	@mkdir -p $(BIN)
@@ -89,6 +90,11 @@ test_process_input_loader: $(PROCESS_INPUT_SRC) $(TEST_PROCESS_INPUT)
 test_reference_string_input_loader: $(REFERENCE_STRING_INPUT_SRC) $(TEST_REFERENCE_STRING_INPUT)
 	@mkdir -p $(BIN)
 	$(CXX) $(CXXFLAGS) $(REFERENCE_STRING_INPUT_SRC) $(TEST_REFERENCE_STRING_INPUT) -o $(BIN)/$@
+	./$(BIN)/$@
+
+test_main_filesystem_flow: compile $(TEST_MAIN_FILESYSTEM_FLOW)
+	@mkdir -p $(BIN)
+	$(CXX) $(CXXFLAGS) $(TEST_MAIN_FILESYSTEM_FLOW) -o $(BIN)/$@
 	./$(BIN)/$@
 
 test_memory_all: test_memory1 test_memory2
