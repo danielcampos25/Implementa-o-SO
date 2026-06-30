@@ -23,6 +23,9 @@ test_filesystem
 test_process_scheduler
 test_dispatcher
 test_process_input_loader
+test_memory1
+test_memory2
+example_complete
 dispatcher
 .DS_Store
 Thumbs.db
