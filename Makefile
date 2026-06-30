@@ -7,7 +7,9 @@ CXXFLAGS = -std=c++17 #-Wall -Wextra -pedantic
 
 BIN = bin
 EXE = $(BIN)/g2_OS
-RUN_INPUT = tests/input/processes_valid.txt
+RUN_PROCESS_INPUT = tests/input/processes_valid.txt
+RUN_FILES_INPUT = tests/objects/files_example1.txt
+RUN_STRING_INPUT = tests/input/string_valid_for_processes.txt
 
 RESOURCE_SRC = ResourceManager/ResourceManager.cpp
 MEMORY_SRC = MemoryManager/MemoryManager.cpp
@@ -16,7 +18,7 @@ PROCESS_SRC = Process/Process.cpp ProcessScheduler/ProcessScheduler.cpp $(RESOUR
 DISPATCHER_SRC = Dispatcher/Dispatcher.cpp $(PROCESS_SRC)
 PROCESS_INPUT_SRC = ProcessInput/ProcessInputLoader.cpp $(DISPATCHER_SRC)
 REFERENCE_STRING_INPUT_SRC = ReferenceStringInput/ReferenceStringInputLoader.cpp
-MAIN_SRC = main.cpp $(PROCESS_INPUT_SRC)
+MAIN_SRC = main.cpp $(PROCESS_INPUT_SRC) $(REFERENCE_STRING_INPUT_SRC)
 
 TEST_RESOURCE_1 = test_resource_scheduler.cpp
 TEST_RESOURCE_2 = test_resource_scheduler2.cpp
@@ -40,7 +42,7 @@ compile: $(MAIN_SRC)
 	$(CXX) $(CXXFLAGS) $(MAIN_SRC) -o $(EXE)
 
 run: compile
-	./$(EXE) $(RUN_INPUT)
+	./$(EXE) $(RUN_PROCESS_INPUT) $(RUN_FILES_INPUT) $(RUN_STRING_INPUT)
 
 dispatcher: $(MAIN_SRC)
 	@mkdir -p $(BIN)
