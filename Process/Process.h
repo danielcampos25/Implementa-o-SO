@@ -6,6 +6,7 @@ enum class ProcessState
     New,
     Ready,
     Running,
+    Blocked,
     Finished
 };
 
@@ -71,7 +72,7 @@ public:
     void markReady();
     void markRunning();
     void markFinished();
-
+    void markBlocked();
     int executeFor(int timeUnits);
     int executeUntilFinished();
 

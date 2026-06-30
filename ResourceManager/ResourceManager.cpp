@@ -1,5 +1,5 @@
 #include "ResourceManager.h"
-#include "../Scheduler/scheduler.h"
+#include "../ProcessScheduler/ProcessScheduler.h"
 #include <iostream>
 #include <mutex>
 #include <array>
@@ -22,7 +22,7 @@ using namespace std;
  * utilizado para bloquear e desbloquear processos quando
  * houver disputa por recursos de E/S.
  */
-ResourceManager::ResourceManager(Scheduler *scheduler)
+ResourceManager::ResourceManager(ProcessScheduler *scheduler)
     : scannerOwner(-1), modemOwner(-1), printerOwners(), sataOwners(), scheduler(scheduler)
 {
     printerOwners.fill(-1);
@@ -35,7 +35,7 @@ ResourceManager::ResourceManager(Scheduler *scheduler)
  * Essa função existe para permitir que o ResourceManager e o
  * Scheduler sejam criados separadamente e conectados posteriormente.
  */
-void ResourceManager::setScheduler(Scheduler *scheduler)
+void ResourceManager::setScheduler(ProcessScheduler *scheduler)
 {
     std::lock_guard<std::recursive_mutex> guard(mtx);
     this->scheduler = scheduler;

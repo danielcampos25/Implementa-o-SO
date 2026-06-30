@@ -60,6 +60,11 @@ Process::Process(int pid,
     }
 }
 
+void Process::markBlocked()
+{
+    state = ProcessState::Blocked;
+}
+
 bool Process::isValidPriority(int priority)
 {
     return priority >= REAL_TIME_PRIORITY && priority <= USER_PRIORITY_LOW;
