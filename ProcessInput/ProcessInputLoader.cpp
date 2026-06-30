@@ -1,6 +1,7 @@
 #include "ProcessInputLoader.h"
 
 #include <cerrno>
+#include <cstddef>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -25,8 +26,46 @@ ProcessInputLoadResult errorResult(ProcessInputErrorKind kind,
     return {false, {}, {kind, lineNumber, message}};
 }
 
+std::string trimSpaces(const std::string &text)
+{
+    const std::size_t first = text.find_first_not_of(" \t\r\n\f\v");
+    if (first == std::string::npos)
+    {
+        return "";
+    }
+
+    const std::size_t last = text.find_last_not_of(" \t\r\n\f\v");
+    return text.substr(first, last - first + 1);
+}
+
+std::vector<std::string> splitCommaColumns(const std::string &line)
+{
+    std::vector<std::string> columns;
+    std::size_t start = 0;
+
+    while (start <= line.size())
+    {
+        const std::size_t delimiter = line.find(',', start);
+        if (delimiter == std::string::npos)
+        {
+            columns.push_back(trimSpaces(line.substr(start)));
+            break;
+        }
+
+        columns.push_back(trimSpaces(line.substr(start, delimiter - start)));
+        start = delimiter + 1;
+    }
+
+    return columns;
+}
+
 std::vector<std::string> splitColumns(const std::string &line)
 {
+    if (line.find(',') != std::string::npos)
+    {
+        return splitCommaColumns(line);
+    }
+
     std::istringstream stream(line);
     std::vector<std::string> columns;
     std::string column;

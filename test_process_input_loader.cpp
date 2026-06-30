@@ -56,6 +56,44 @@ void testLoadValidFile()
     assert(result.entries[2].inputOrder == 2);
 }
 
+void testLoadCommaSeparatedFileWithSpaces()
+{
+    const ProcessInputLoadResult result =
+        ProcessInputLoader::loadFromFile(INPUT_DIR + "processes_comma_spaces.txt");
+
+    assertSuccess(result);
+    assert(result.entries.size() == 1);
+
+    assert(result.entries[0].startTime == 2);
+    assert(result.entries[0].priority == 0);
+    assert(result.entries[0].processorTime == 3);
+    assert(result.entries[0].memoryBlocks == 64);
+    assert(result.entries[0].printerRequest == 0);
+    assert(result.entries[0].scannerRequest == 0);
+    assert(result.entries[0].modemRequest == 0);
+    assert(result.entries[0].sataDiskRequest == 0);
+    assert(result.entries[0].inputOrder == 0);
+}
+
+void testLoadCompactCommaSeparatedFile()
+{
+    const ProcessInputLoadResult result =
+        ProcessInputLoader::loadFromFile(INPUT_DIR + "processes_comma_compact.txt");
+
+    assertSuccess(result);
+    assert(result.entries.size() == 1);
+
+    assert(result.entries[0].startTime == 2);
+    assert(result.entries[0].priority == 0);
+    assert(result.entries[0].processorTime == 3);
+    assert(result.entries[0].memoryBlocks == 64);
+    assert(result.entries[0].printerRequest == 0);
+    assert(result.entries[0].scannerRequest == 0);
+    assert(result.entries[0].modemRequest == 0);
+    assert(result.entries[0].sataDiskRequest == 0);
+    assert(result.entries[0].inputOrder == 0);
+}
+
 void testLoaderDoesNotCreateProcessesOrEvents()
 {
     const ProcessInputLoadResult result =
@@ -102,6 +140,25 @@ void testInvalidNumberError()
 {
     const ProcessInputLoadResult result =
         ProcessInputLoader::loadFromFile(INPUT_DIR + "processes_invalid_number.txt");
+
+    assertFailure(result, ProcessInputErrorKind::InvalidNumber);
+    assert(result.error.lineNumber == 1);
+}
+
+void testInvalidCommaFields()
+{
+    ProcessInputLoadResult result =
+        ProcessInputLoader::loadFromFile(INPUT_DIR + "processes_comma_empty_field.txt");
+
+    assertFailure(result, ProcessInputErrorKind::InvalidNumber);
+    assert(result.error.lineNumber == 1);
+
+    result = ProcessInputLoader::loadFromFile(INPUT_DIR + "processes_only_commas.txt");
+
+    assertFailure(result, ProcessInputErrorKind::InvalidNumber);
+    assert(result.error.lineNumber == 1);
+
+    result = ProcessInputLoader::loadFromFile(INPUT_DIR + "processes_comma_empty_spaces.txt");
 
     assertFailure(result, ProcessInputErrorKind::InvalidNumber);
     assert(result.error.lineNumber == 1);
@@ -170,11 +227,14 @@ int main()
     std::cout << "===== Process Input Loader Tests =====\n";
 
     testLoadValidFile();
+    testLoadCommaSeparatedFileWithSpaces();
+    testLoadCompactCommaSeparatedFile();
     testLoaderDoesNotCreateProcessesOrEvents();
     testNonexistentFileError();
     testReadFailureError();
     testInvalidColumnCountErrors();
     testInvalidNumberError();
+    testInvalidCommaFields();
     testBlankLinesAndExtraSpaces();
     testPreservesOrderWithRepeatedAndUnsortedStartTimes();
     testDispatcherCompatibility();
