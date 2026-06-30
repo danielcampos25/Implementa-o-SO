@@ -1,26 +1,27 @@
-# Implementação de Gerenciamento de Recursos e Scheduler
+# Implementação de Gerenciamento de Recursos e ProcessScheduler
 
-Este projeto demonstra um gerenciador simples de recursos de E/S e um scheduler que bloqueia e reavalia processos quando há disputa por dispositivos.
+Este projeto demonstra um gerenciador simples de recursos de E/S integrado ao `ProcessScheduler`, que escalona CPU, bloqueia processos por disputa de dispositivos e reavalia bloqueados quando recursos são liberados.
 
 ## Objetivo do Projeto
 
 O projeto implementa um modelo de alocação de dispositivos de entrada/saída em que processos solicitam recursos e, caso algum recurso esteja ocupado, o processo é bloqueado.
-Quando recursos são liberados, o scheduler tenta reavaliar os processos bloqueados e acordá-los se for possível.
+Quando recursos são liberados, o `ProcessScheduler` tenta reavaliar os processos bloqueados e recolocá-los na fila `READY` se for possível.
 
 ## Estrutura do Projeto
 
 - `ResourceManager/`
   - `ResourceManager.h` - Declarações da classe `ResourceManager` e estruturas auxiliares.
   - `ResourceManager.cpp` - Implementação do gerenciador de recursos.
-  - `Resource.h` - Estrutura `ResourceRequest` que descreve uma requisição de E/S.
+  - `Resource.h` - Estruturas `ResourceRequest` e `blockedBy`.
 
-- `Scheduler/`
-  - `scheduler.h` - Declarações da classe `Scheduler`, tipos de bloqueio e interfaces.
-  - `scheduler.cpp` - Implementação do scheduler e da fila de processos bloqueados.
+- `ProcessScheduler/`
+  - `ProcessScheduler.h` - Declarações do escalonador de CPU e da fila de bloqueados por E/S.
+  - `ProcessScheduler.cpp` - Implementação das filas `READY`, aging, quantum e reavaliação de bloqueados.
 
 - `test_resource_scheduler.cpp` - Teste básico de alocação, bloqueio e liberação.
 - `test_resource_scheduler2.cpp` - Teste de estresse com fila de bloqueio e reavaliação.
 - `test_resource_scheduler3.cpp` - Teste de desbloqueio parcial e comportamento em cadeia.
+- `test_process_scheduler.cpp` - Testes do modelo de processo, filas prontas e transições `READY/BLOCKED`.
 - `Makefile` - Alvos de compilação e execução dos testes.
 
 ## Como o Sistema Funciona
@@ -41,24 +42,25 @@ As principais operações são:
   - Retorna um struct `blockedBy` com a informação de quais recursos bloqueiam a requisição.
 - `allocate(const ResourceRequest &req, bool canBlock = true)`
   - Tenta alocar os recursos solicitados.
-  - Se algum recurso estiver ocupado, pode bloquear o processo no scheduler.
+  - Se algum recurso estiver ocupado, pode bloquear o processo no `ProcessScheduler`.
 - `release(int pid)`
   - Libera todos os recursos que estavam associados ao processo.
-  - Notifica o scheduler para reavaliar processos bloqueados.
+  - Notifica o `ProcessScheduler` para reavaliar processos bloqueados.
 - `printStatus()`
   - Exibe o estado atual dos recursos para depuração.
 
-### Scheduler
+### ProcessScheduler
 
-O `Scheduler` gerencia a fila `blockedIO` de processos bloqueados por E/S.
+O `ProcessScheduler` gerencia as filas `READY` por prioridade, a execução de CPU e a fila `blockedIO` de processos bloqueados por E/S.
 
 - `blockProcess(const ResourceRequest &request, const blockedBy &reason)`
-  - Insere um processo na fila de bloqueados junto com sua requisição original.
+  - Marca o processo como `Blocked`, remove o PID das filas `READY` e guarda a requisição original na fila de bloqueados.
 - `unblockProcess(int pid)`
   - Remove um processo específico da fila de bloqueio.
 - `checkBlockedProcesses()`
   - Reavalia todos os processos bloqueados e tenta alocar seus recursos novamente.
   - Usa `allocate(..., false)` para evitar reinserir o processo na fila caso ainda não consiga alocar.
+  - Quando a realocação funciona, marca o processo como `Ready` e o reinsere na fila pronta correta.
 
 ## Como Compilar e Executar
 
@@ -120,28 +122,28 @@ O `Scheduler` gerencia a fila `blockedIO` de processos bloqueados por E/S.
 
 - A implementação atual trata cada recurso como exclusividade por processo.
 - Impressoras e portas SATA têm duas unidades cada, mas o código aloca apenas uma instância por chamada de alocação.
-- O scheduler não implementa prioridades ou ordem de espera completa além da fila FIFO.
-- Ainda não há tratamento explícito de deadlock além do bloqueio/refenação natural de recursos.
+- O desbloqueio por E/S segue a ordem FIFO da fila de bloqueados.
+- Ainda não há tratamento explícito de deadlock além do bloqueio/reavaliação natural de recursos.
 
 ## Estrutura de Recursos e Bloqueios
 
 - `ResourceRequest` representa a requisição feita por um processo.
 - `blockedBy` indica exatamente quais dispositivos estão impedindo a alocação.
-- A relação `ResourceManager <-> Scheduler` permite:
+- A relação `ResourceManager <-> ProcessScheduler` permite:
   1. O `ResourceManager` detectar bloqueios.
-  2. O `Scheduler` armazenar a requisição original.
-  3. O `Scheduler` reavaliar o pedido quando recursos forem liberados.
+  2. O `ProcessScheduler` armazenar a requisição original.
+  3. O `ProcessScheduler` reavaliar o pedido quando recursos forem liberados.
 
 ## Sugestões de Extensões Futuras
 
 - Adicionar prioridades entre processos bloqueados.
 - Implementar deadlock detection e prevenção.
 - Adicionar logs mais detalhados de alocação e desbloqueio.
-- Incluir um módulo de execução de processos com estado READY/BLOCKED/RUNNING.
+- Expandir a integração entre recursos de E/S e os eventos do escalonador.
 
 ## Módulo de Processos e Filas Prontas
 
-Esta feature adiciona uma simulação sequencial de processos prontos para CPU sem alterar o `Scheduler/` usado pelo `ResourceManager`.
+O `ProcessScheduler` executa uma simulação sequencial de processos prontos para CPU e concentra a fila de bloqueados por E/S usada pelo `ResourceManager`.
 
 Arquivos adicionados:
 
@@ -161,6 +163,7 @@ Comportamentos implementados:
 - Tempo real executa até finalizar, sem preempção.
 - Usuário executa quantum de 1 unidade por despacho.
 - Processos de usuário inacabados retornam para a fila pronta.
+- Processos bloqueados por E/S saem das filas prontas e voltam para a prioridade correta quando seus recursos são realocados.
 - Aging após 5 ciclos de espera: prioridade 3 sobe para 2, prioridade 2 sobe para 1.
 - Limite de 1000 processos aceitos pelo escalonador.
 - Processos com tempo total de CPU zero são finalizados sem despacho.
@@ -201,17 +204,17 @@ Comparação com os critérios de aceite:
 - Prioridade de usuário respeita 1 antes de 2 e 2 antes de 3: coberto por `testRealTimeFifoAndUserPriority`.
 - Aging promove prioridades 3 para 2 e 2 para 1 após 5 ciclos: coberto por `testAging`.
 - Mais de 1000 processos é rejeitado: coberto por `testCapacityLimit`.
-- Testes existentes de `ResourceManager/` e `FileSystem/` continuam no alvo `make run`.
+- Testes existentes de `ResourceManager/`, `ProcessScheduler/` e `FileSystem/` continuam no alvo `make run`.
 
 Limitações:
 
 - `startTime` é armazenado no processo, mas admissão atrasada por tempo de inicialização fica para integração futura com parser/dispatcher.
-- Memória, recursos de E/S e sistema de arquivos não são reimplementados por este módulo.
+- Memória e sistema de arquivos não são reimplementados por este módulo.
 
 Próximos passos recomendados:
 
 - Integrar o `ProcessScheduler` ao dispatcher principal quando o parser de entrada estiver definido.
-- Conectar campos de requisição de recursos aos módulos de E/S sem alterar a API pública existente do `ResourceManager`.
+- Conectar eventos de bloqueio/desbloqueio ao dispatcher principal.
 
 ## Módulo de Carregamento de Entrada de Processos
 

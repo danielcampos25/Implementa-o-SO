@@ -1,5 +1,6 @@
 #include "Process/Process.h"
 #include "ProcessScheduler/ProcessScheduler.h"
+#include "ResourceManager/ResourceManager.h"
 
 #include <cassert>
 #include <iostream>
@@ -305,6 +306,45 @@ void testEvents()
     assert(sawQuantum);
 }
 
+void testBlockedProcessesLeaveAndReturnToReadyQueue()
+{
+    ProcessScheduler scheduler;
+    ResourceManager rm(&scheduler);
+    scheduler.setResourceManager(&rm);
+    rm.setScheduler(&scheduler);
+
+    const int owner = scheduler.createProcess(0, 1, 1, 64, 0, 1, 0, 0);
+    const int blocked = scheduler.createProcess(0, 1, 2, 64, 0, 1, 0, 0);
+
+    ResourceRequest ownerRequest{owner, false, true, false, false};
+    ResourceRequest blockedRequest{blocked, false, true, false, false};
+
+    assert(rm.allocate(ownerRequest));
+    assert(!rm.allocate(blockedRequest));
+
+    assert(scheduler.isBlocked(blocked));
+    assert(scheduler.getProcessState(blocked) == ProcessState::Blocked);
+    assert(scheduler.queueSize(Process::USER_PRIORITY_HIGH) == 1);
+    assert(scheduler.selectNextProcessId().value() == owner);
+
+    scheduler.runNext();
+    assert(scheduler.getProcessState(owner) == ProcessState::Finished);
+    assert(scheduler.getProcessState(blocked) == ProcessState::Blocked);
+    assert(!scheduler.hasReadyProcess());
+    assert(!scheduler.runNext());
+
+    rm.release(owner);
+
+    assert(!scheduler.isBlocked(blocked));
+    assert(scheduler.getProcessState(blocked) == ProcessState::Ready);
+    assert(scheduler.queueSize(Process::USER_PRIORITY_HIGH) == 1);
+    assert(scheduler.selectNextProcessId().value() == blocked);
+
+    assert(scheduler.runNext());
+    assert(scheduler.getProcessState(blocked) == ProcessState::Ready);
+    assert(scheduler.getProcessRemainingTime(blocked) == 1);
+}
+
 int main()
 {
     std::cout << "===== ProcessScheduler Module Tests =====\n";
@@ -319,6 +359,7 @@ int main()
     testAging();
     testAgingCountsRealTimeCpuTime();
     testEvents();
+    testBlockedProcessesLeaveAndReturnToReadyQueue();
 
     std::cout << "All process scheduler tests passed.\n";
     return 0;

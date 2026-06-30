@@ -18,7 +18,7 @@ using namespace std;
  * O valor -1 indica que o recurso não possui nenhum processo
  * associado no momento.
  *
- * Também armazena uma referência para o Scheduler, que será
+ * Também armazena uma referência para o ProcessScheduler, que será
  * utilizado para bloquear e desbloquear processos quando
  * houver disputa por recursos de E/S.
  */
@@ -30,10 +30,10 @@ ResourceManager::ResourceManager(ProcessScheduler *scheduler)
 }
 
 /*
- * Atualiza a referência para o Scheduler utilizado pelo sistema.
+ * Atualiza a referência para o ProcessScheduler utilizado pelo sistema.
  *
  * Essa função existe para permitir que o ResourceManager e o
- * Scheduler sejam criados separadamente e conectados posteriormente.
+ * ProcessScheduler sejam criados separadamente e conectados posteriormente.
  */
 void ResourceManager::setScheduler(ProcessScheduler *scheduler)
 {
@@ -92,7 +92,7 @@ blockedBy ResourceManager::canAllocate(const ResourceRequest &req)
  * 1) Verifica a disponibilidade de todos os recursos solicitados.
  * 2) Caso algum recurso esteja indisponível:
  *      - o processo pode ser enviado para a fila BLOCKED_IO
- *        do Scheduler (quando canBlock == true);
+ *        do ProcessScheduler (quando canBlock == true);
  *      - nenhum recurso é alocado;
  *      - a função retorna false.
  * 3) Caso todos os recursos estejam disponíveis:
@@ -165,7 +165,7 @@ bool ResourceManager::allocate(const ResourceRequest &req, bool canBlock)
  * Essa função normalmente é chamada quando o processo termina
  * sua execução ou deixa de utilizar os dispositivos de E/S.
  *
- * Após a liberação, o Scheduler é notificado para verificar
+ * Após a liberação, o ProcessScheduler é notificado para verificar
  * se algum processo da fila BLOCKED_IO pode voltar para READY.
  */
 void ResourceManager::release(int pid)

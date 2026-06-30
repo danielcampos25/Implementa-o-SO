@@ -83,6 +83,8 @@ private:
 
     void enqueueReadyProcess(int pid);
 
+    void removeFromReadyQueues(int pid);
+
     std::optional<int> popNextReadyPid();
 
     void advanceWaitingCycles(int elapsedCycles,

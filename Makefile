@@ -2,9 +2,9 @@ CXX = g++
 CXXFLAGS = -std=c++17 -Wall -Wextra -pedantic
 
 # Arquivos de implementação comuns ao projeto
-RESOURCE_SRC = ResourceManager/ResourceManager.cpp Scheduler/scheduler.cpp
+RESOURCE_SRC = ResourceManager/ResourceManager.cpp
 FILESYSTEM_SRC = FileSystem/FileSystem.cpp FileSystem/FileSystemManager.cpp
-PROCESS_SRC = Process/Process.cpp ProcessScheduler/ProcessScheduler.cpp
+PROCESS_SRC = Process/Process.cpp ProcessScheduler/ProcessScheduler.cpp $(RESOURCE_SRC)
 DISPATCHER_SRC = Dispatcher/Dispatcher.cpp $(PROCESS_SRC)
 PROCESS_INPUT_SRC = ProcessInput/ProcessInputLoader.cpp $(DISPATCHER_SRC)
 MAIN_SRC = main.cpp $(PROCESS_INPUT_SRC)
@@ -28,16 +28,16 @@ run: all
 	./test_resource_scheduler && ./test_resource_scheduler2 && ./test_resource_scheduler3 && ./test_filesystem && ./test_process_scheduler && ./test_dispatcher && ./test_process_input_loader
 
 # Compila o primeiro teste
-test_resource_scheduler: $(RESOURCE_SRC) $(TEST1)
-	$(CXX) $(CXXFLAGS) $(RESOURCE_SRC) $(TEST1) -o $@
+test_resource_scheduler: $(PROCESS_SRC) $(TEST1)
+	$(CXX) $(CXXFLAGS) $(PROCESS_SRC) $(TEST1) -o $@
 
 # Compila o segundo teste
-test_resource_scheduler2: $(RESOURCE_SRC) $(TEST2)
-	$(CXX) $(CXXFLAGS) $(RESOURCE_SRC) $(TEST2) -o $@
+test_resource_scheduler2: $(PROCESS_SRC) $(TEST2)
+	$(CXX) $(CXXFLAGS) $(PROCESS_SRC) $(TEST2) -o $@
 
 # Compila o terceiro teste
-test_resource_scheduler3: $(RESOURCE_SRC) $(TEST3)
-	$(CXX) $(CXXFLAGS) $(RESOURCE_SRC) $(TEST3) -o $@
+test_resource_scheduler3: $(PROCESS_SRC) $(TEST3)
+	$(CXX) $(CXXFLAGS) $(PROCESS_SRC) $(TEST3) -o $@
 
 # Compila o teste do FileSystem
 test_filesystem: $(FILESYSTEM_SRC) $(TEST_FS)

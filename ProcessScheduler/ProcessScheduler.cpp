@@ -93,6 +93,25 @@
         readyQueues[process.getPriority()].push_back(pid);
     }
 
+    void ProcessScheduler::removeFromReadyQueues(int pid)
+    {
+        for (std::deque<int> &queue : readyQueues)
+        {
+            std::deque<int> filtered;
+            while (!queue.empty())
+            {
+                const int currentPid = queue.front();
+                queue.pop_front();
+
+                if (currentPid != pid)
+                {
+                    filtered.push_back(currentPid);
+                }
+            }
+            queue.swap(filtered);
+        }
+    }
+
     std::optional<int> ProcessScheduler::popNextReadyPid()
     {
         removeFinishedFromReadyQueues();
@@ -104,7 +123,9 @@
                 const int pid = queue.front();
                 queue.pop_front();
 
-                if (hasProcess(pid) && !processes[pid].isFinished())
+                if (hasProcess(pid) &&
+                    !processes[pid].isFinished() &&
+                    processes[pid].getState() != ProcessState::Blocked)
                 {
                     return pid;
                 }
@@ -124,7 +145,9 @@
             {
                 for (int pid : queue)
                 {
-                    if (pid != runningPid && hasProcess(pid))
+                    if (pid != runningPid &&
+                        hasProcess(pid) &&
+                        processes[pid].getState() != ProcessState::Blocked)
                     {
                         processes[pid].incrementWaitingCycles();
                     }
@@ -146,7 +169,9 @@
                 const int pid = readyQueues[priority].front();
                 readyQueues[priority].pop_front();
 
-                if (!hasProcess(pid) || processes[pid].isFinished())
+                if (!hasProcess(pid) ||
+                    processes[pid].isFinished() ||
+                    processes[pid].getState() == ProcessState::Blocked)
                 {
                     continue;
                 }
@@ -177,7 +202,9 @@
                 const int pid = queue.front();
                 queue.pop_front();
 
-                if (hasProcess(pid) && !processes[pid].isFinished())
+                if (hasProcess(pid) &&
+                    !processes[pid].isFinished() &&
+                    processes[pid].getState() != ProcessState::Blocked)
                 {
                     filtered.push_back(pid);
                 }
@@ -274,7 +301,9 @@
         {
             for (int pid : queue)
             {
-                if (hasProcess(pid) && !processes[pid].isFinished())
+                if (hasProcess(pid) &&
+                    !processes[pid].isFinished() &&
+                    processes[pid].getState() != ProcessState::Blocked)
                 {
                     return pid;
                 }
@@ -351,7 +380,9 @@
         std::size_t count = 0;
         for (int pid : readyQueues[priority])
         {
-            if (hasProcess(pid) && !processes[pid].isFinished())
+            if (hasProcess(pid) &&
+                !processes[pid].isFinished() &&
+                processes[pid].getState() != ProcessState::Blocked)
             {
                 ++count;
             }
@@ -428,6 +459,13 @@ void ProcessScheduler::blockProcess(const ResourceRequest &request,
 {
     if (!isBlocked(request.pid))
     {
+        if (hasProcess(request.pid))
+        {
+            Process &process = getMutableProcess(request.pid);
+            process.markBlocked();
+            removeFromReadyQueues(request.pid);
+        }
+
         blockedIO.push({request.pid, request, reason});
     }
 }
@@ -485,8 +523,10 @@ void ProcessScheduler::checkBlockedProcesses()
 
         if (resourceManager->allocate(current.request, false))
         {
-            // Processo desbloqueado.
-            // Futuramente aqui ele pode voltar para READY.
+            if (hasProcess(current.pid) && !processes[current.pid].isFinished())
+            {
+                enqueueReadyProcess(current.pid);
+            }
         }
         else
         {

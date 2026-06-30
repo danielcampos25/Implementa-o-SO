@@ -16,11 +16,11 @@ FileSystem::FileSystem(int totalBlocks)
 /*
  * Verifica se um PID corresponde a um processo de tempo real.
  * Por convenção, assumimos que processos de tempo real têm prioridade 0.
- * Este método pode ser adaptado conforme a integração com o Scheduler.
+ * Este método pode ser adaptado conforme a integração com o ProcessScheduler.
  */
 bool FileSystem::isRealTimeProcess(int processPID)
 {
-    // TODO: Integrar com o Scheduler para obter a prioridade real do processo
+    // TODO: Integrar com o ProcessScheduler para obter a prioridade real do processo
     // Por enquanto, retorna false para todos (será ajustado na integração)
     return false;
 }

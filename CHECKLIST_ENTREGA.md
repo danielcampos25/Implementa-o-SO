@@ -218,7 +218,7 @@ O módulo de gerenciamento de arquivos foi:
 ## 📝 Próximos Passos
 
 1. [ ] Integrar com dispatcher.cpp
-2. [ ] Passar Scheduler
+2. [ ] Passar ProcessScheduler
 3. [ ] Passar ResourceManager
 4. [ ] Carregar arquivo files.txt
 5. [ ] Registrar processos
