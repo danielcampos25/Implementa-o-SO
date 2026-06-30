@@ -15,6 +15,7 @@ FILESYSTEM_SRC = FileSystem/FileSystem.cpp FileSystem/FileSystemManager.cpp
 PROCESS_SRC = Process/Process.cpp ProcessScheduler/ProcessScheduler.cpp $(RESOURCE_SRC)
 DISPATCHER_SRC = Dispatcher/Dispatcher.cpp $(PROCESS_SRC)
 PROCESS_INPUT_SRC = ProcessInput/ProcessInputLoader.cpp $(DISPATCHER_SRC)
+REFERENCE_STRING_INPUT_SRC = ReferenceStringInput/ReferenceStringInputLoader.cpp
 MAIN_SRC = main.cpp $(PROCESS_INPUT_SRC)
 
 TEST_RESOURCE_1 = test_resource_scheduler.cpp
@@ -23,6 +24,7 @@ TEST_RESOURCE_3 = test_resource_scheduler3.cpp
 TEST_PROCESS = test_process_scheduler.cpp
 TEST_DISPATCHER = test_dispatcher.cpp
 TEST_PROCESS_INPUT = test_process_input_loader.cpp
+TEST_REFERENCE_STRING_INPUT = test_reference_string_input_loader.cpp
 TEST_FS = tests/scripts/test_filesystem.cpp
 TEST_MEM1 = tests/scripts/test_memory1.cpp
 TEST_MEM2 = tests/scripts/test_memory2.cpp
@@ -31,7 +33,7 @@ OBJ = $(RESOURCE_SRC:.cpp=.o) $(MEMORY_SRC:.cpp=.o) $(FILESYSTEM_SRC:.cpp=.o) $(
 
 .PHONY: all compile run clean all_tests test_scheduler_all test_memory_all
 
-all: compile test_process_scheduler test_dispatcher test_process_input_loader
+all: compile test_process_scheduler test_dispatcher test_process_input_loader test_reference_string_input_loader
 
 compile: $(MAIN_SRC)
 	@mkdir -p $(BIN)
@@ -48,7 +50,7 @@ dispatcher: $(MAIN_SRC)
 # -  Testes
 # -----------------------------------
 
-all_tests: test_scheduler_all test_memory_all test_filesystem test_process_scheduler test_dispatcher test_process_input_loader
+all_tests: test_scheduler_all test_memory_all test_filesystem test_process_scheduler test_dispatcher test_process_input_loader test_reference_string_input_loader
 
 test_scheduler_all: test_resource_scheduler test_resource_scheduler2 test_resource_scheduler3
 
@@ -80,6 +82,11 @@ test_dispatcher: $(DISPATCHER_SRC) $(TEST_DISPATCHER)
 test_process_input_loader: $(PROCESS_INPUT_SRC) $(TEST_PROCESS_INPUT)
 	@mkdir -p $(BIN)
 	$(CXX) $(CXXFLAGS) $(PROCESS_INPUT_SRC) $(TEST_PROCESS_INPUT) -o $(BIN)/$@
+	./$(BIN)/$@
+
+test_reference_string_input_loader: $(REFERENCE_STRING_INPUT_SRC) $(TEST_REFERENCE_STRING_INPUT)
+	@mkdir -p $(BIN)
+	$(CXX) $(CXXFLAGS) $(REFERENCE_STRING_INPUT_SRC) $(TEST_REFERENCE_STRING_INPUT) -o $(BIN)/$@
 	./$(BIN)/$@
 
 test_memory_all: test_memory1 test_memory2
