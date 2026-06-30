@@ -158,6 +158,63 @@ void testZeroCpuProcessDoesNotConsumeReference()
     assert(dispatcher.getPageFaultsForPid(0) == 0);
 }
 
+void testPageFaultTotalsAreOrderedByPid()
+{
+    Dispatcher dispatcher({entry(0, 1, 1), entry(0, 1, 1), entry(0, 1, 1)},
+                          {{1}, {2}, {3}});
+
+    dispatcher.runUntilComplete();
+
+    const std::vector<std::pair<int, int>> totals = dispatcher.getPageFaultTotals();
+    assert(totals.size() == 3);
+    assert(totals[0].first == 0);
+    assert(totals[1].first == 1);
+    assert(totals[2].first == 2);
+}
+
+void testPageFaultTotalsExcludeRejectedProcesses()
+{
+    Dispatcher dispatcher({entry(0, 4, 1), entry(0, 1, 1)}, {{10}, {20}});
+
+    dispatcher.runUntilComplete();
+
+    const std::vector<std::pair<int, int>> totals = dispatcher.getPageFaultTotals();
+    assert(totals.size() == 1);
+    assert(totals[0].first == 0);
+}
+
+void testPageFaultSummaryFormatting()
+{
+    Dispatcher dispatcher({entry(0, 1, 2)}, {{5, 5}});
+
+    dispatcher.runUntilComplete();
+
+    std::ostringstream output;
+    dispatcher.printPageFaultSummary(output);
+    const std::string text = output.str();
+
+    assert(text.find("Número de Faltas de Páginas por processo:") != std::string::npos);
+    assert(text.find("P0 = 1 faltas de páginas") != std::string::npos);
+}
+
+void testPageFaultSummaryAppearsAfterEvents()
+{
+    Dispatcher dispatcher({entry(0, 1, 1)}, {{7}});
+
+    dispatcher.runUntilComplete();
+
+    std::ostringstream output;
+    dispatcher.printEvents(output);
+    dispatcher.printPageFaultSummary(output);
+    const std::string text = output.str();
+
+    const std::size_t eventPosition = text.find("type=completion");
+    const std::size_t summaryPosition = text.find("Número de Faltas de Páginas por processo:");
+    assert(eventPosition != std::string::npos);
+    assert(summaryPosition != std::string::npos);
+    assert(eventPosition < summaryPosition);
+}
+
 void testInitialAdmissionAndPendingProcesses()
 {
     Dispatcher dispatcher({entry(0, 1, 1), entry(2, 1, 1), entry(5, 1, 1)});
@@ -376,6 +433,10 @@ int main()
     testRealTimeProcessConsumesMultipleReferencesInOneDispatch();
     testInsufficientReferenceStringRecordsError();
     testZeroCpuProcessDoesNotConsumeReference();
+    testPageFaultTotalsAreOrderedByPid();
+    testPageFaultTotalsExcludeRejectedProcesses();
+    testPageFaultSummaryFormatting();
+    testPageFaultSummaryAppearsAfterEvents();
     testInitialAdmissionAndPendingProcesses();
     testSameStartTimeOrdering();
     testNoDuplicateAdmission();

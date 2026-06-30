@@ -9,6 +9,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <utility>
 #include <vector>
 
 class MemoryManager;
@@ -117,6 +118,7 @@ public:
     std::size_t getReferenceStringCount() const;
     bool hasPageFaultTotal(int pid) const;
     int getPageFaultsForPid(int pid) const;
+    std::vector<std::pair<int, int>> getPageFaultTotals() const;
     bool hasSimulationError() const;
     const std::string &getSimulationErrorMessage() const;
     const std::vector<DispatcherEvent> &getEvents() const;
@@ -125,6 +127,7 @@ public:
     static std::string eventTypeName(DispatcherEventType type);
     static std::string formatEvent(const DispatcherEvent &event);
     void printEvents(std::ostream &output) const;
+    void printPageFaultSummary(std::ostream &output) const;
 };
 
 #endif

@@ -478,6 +478,20 @@ int Dispatcher::getPageFaultsForPid(int pid) const
     return it->second;
 }
 
+std::vector<std::pair<int, int>> Dispatcher::getPageFaultTotals() const
+{
+    std::vector<std::pair<int, int>> totals;
+    totals.reserve(pageFaultsByPid.size());
+
+    for (const auto &entry : pageFaultsByPid)
+    {
+        totals.push_back(entry);
+    }
+
+    std::sort(totals.begin(), totals.end());
+    return totals;
+}
+
 bool Dispatcher::hasSimulationError() const
 {
     return simulationError;
@@ -540,5 +554,15 @@ void Dispatcher::printEvents(std::ostream &output) const
     for (const DispatcherEvent &event : events)
     {
         output << formatEvent(event) << '\n';
+    }
+}
+
+void Dispatcher::printPageFaultSummary(std::ostream &output) const
+{
+    output << "Número de Faltas de Páginas por processo:\n";
+
+    for (const auto &total : getPageFaultTotals())
+    {
+        output << 'P' << total.first << " = " << total.second << " faltas de páginas\n";
     }
 }

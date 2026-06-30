@@ -86,6 +86,10 @@ int main(int argc, char *argv[])
     Dispatcher dispatcher(processLoadResult.entries, referenceStringLoadResult.referenceStrings);
     dispatcher.runUntilComplete();
     dispatcher.printEvents(std::cout);
+    if (!dispatcher.hasSimulationError())
+    {
+        dispatcher.printPageFaultSummary(std::cout);
+    }
 
     return SUCCESS_EXIT_CODE;
 }
