@@ -67,6 +67,7 @@ private:
 
     int currentCycle;
     int lastConsumedTime;
+    int lastRunPid;
     int nextPid;
     int maxProcesses;
     int agingThreshold;
@@ -160,6 +161,8 @@ public:
     int getCurrentCycle() const;
 
     int getLastConsumedTime() const;
+
+    int getLastRunPid() const;
 
     const Process &getProcess(int pid) const;
 

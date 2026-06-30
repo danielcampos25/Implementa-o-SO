@@ -3,9 +3,15 @@
 
 #include "../ProcessScheduler/ProcessScheduler.h"
 
+#include <cstddef>
 #include <iosfwd>
+#include <memory>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
+
+class MemoryManager;
 
 struct ProcessWorkloadEntry
 {
@@ -60,6 +66,15 @@ private:
     int rejectedProcesses;
     bool completionRecorded;
     std::size_t schedulerEventCursor;
+    std::vector<std::vector<int>> referenceStrings;
+    bool referenceStringsConfigured;
+    std::unordered_map<int, std::size_t> pidReferenceIndexes;
+    std::unordered_map<int, std::size_t> pidReferenceCursors;
+    std::unordered_map<int, int> pageFaultsByPid;
+    std::unordered_set<int> releasedPids;
+    std::unique_ptr<MemoryManager> memoryManager;
+    bool simulationError;
+    std::string simulationErrorMessage;
 
     void recordEvent(DispatcherEventType type,
                      int pid,
@@ -74,14 +89,22 @@ private:
                             const std::string &message);
     bool hasPendingProcess() const;
     int nextPendingStartTime() const;
+    void clearMemoryAccountingState();
+    void initializeProcessMemoryAccounting(int pid, int inputOrder);
+    bool consumeReferencesForLastRun();
+    void releaseProcessMemoryIfFinished(int pid);
     void forwardSchedulerEvents(int cycleOffset);
     void recordCompletionIfNeeded();
 
 public:
     Dispatcher();
+    ~Dispatcher();
     explicit Dispatcher(const std::vector<ProcessWorkloadEntry> &entries);
+    Dispatcher(const std::vector<ProcessWorkloadEntry> &entries,
+               const std::vector<std::vector<int>> &referenceStrings);
 
     void setWorkload(const std::vector<ProcessWorkloadEntry> &entries);
+    void setReferenceStrings(const std::vector<std::vector<int>> &referenceStrings);
     void admitEligibleProcesses();
     bool runNext();
     void runUntilComplete();
@@ -91,6 +114,11 @@ public:
     int admittedCount() const;
     int rejectedCount() const;
     bool isComplete() const;
+    std::size_t getReferenceStringCount() const;
+    bool hasPageFaultTotal(int pid) const;
+    int getPageFaultsForPid(int pid) const;
+    bool hasSimulationError() const;
+    const std::string &getSimulationErrorMessage() const;
     const std::vector<DispatcherEvent> &getEvents() const;
     const ProcessScheduler &getScheduler() const;
 

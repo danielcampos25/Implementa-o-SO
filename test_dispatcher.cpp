@@ -53,6 +53,111 @@ std::vector<DispatcherEvent> eventsOfType(const Dispatcher &dispatcher, Dispatch
     return matches;
 }
 
+void testDispatcherStoresReferenceStrings()
+{
+    const std::vector<std::vector<int>> referenceStrings = {{1, 2, 3}, {4, 5}};
+    Dispatcher dispatcher({entry(0, 1, 1), entry(1, 1, 1)}, referenceStrings);
+
+    assert(dispatcher.getReferenceStringCount() == referenceStrings.size());
+    assert(!dispatcher.hasSimulationError());
+}
+
+void testAdmittedProcessGetsInitialPageFaultTotal()
+{
+    Dispatcher dispatcher({entry(0, 1, 1)}, {{7}});
+
+    dispatcher.admitEligibleProcesses();
+
+    assert(dispatcher.admittedCount() == 1);
+    assert(dispatcher.hasPageFaultTotal(0));
+    assert(dispatcher.getPageFaultsForPid(0) == 0);
+    assert(!dispatcher.hasSimulationError());
+}
+
+void testRejectedProcessDoesNotGetPageFaultTotal()
+{
+    Dispatcher dispatcher({entry(0, 4, 1), entry(0, 1, 1)}, {{9}, {10}});
+
+    dispatcher.admitEligibleProcesses();
+
+    assert(dispatcher.rejectedCount() == 1);
+    assert(dispatcher.admittedCount() == 1);
+    assert(!dispatcher.hasPageFaultTotal(-1));
+    assert(dispatcher.hasPageFaultTotal(0));
+    assert(dispatcher.getPageFaultsForPid(0) == 0);
+}
+
+void testLastRunPidObservation()
+{
+    Dispatcher dispatcher({entry(0, 1, 2)}, {{1, 2}});
+
+    assert(dispatcher.getScheduler().getLastRunPid() == -1);
+    assert(dispatcher.runNext());
+
+    assert(dispatcher.getScheduler().getLastRunPid() == 0);
+    assert(dispatcher.getScheduler().getLastConsumedTime() == ProcessScheduler::USER_QUANTUM);
+    assert(dispatcher.getCurrentCycle() == 1);
+}
+
+void testUserProcessPageFaultsAreCounted()
+{
+    Dispatcher dispatcher({entry(0, 1, 3)}, {{1, 2, 1}});
+
+    dispatcher.runUntilComplete();
+
+    assert(dispatcher.isComplete());
+    assert(!dispatcher.hasSimulationError());
+    assert(dispatcher.hasPageFaultTotal(0));
+    assert(dispatcher.getPageFaultsForPid(0) == 2);
+}
+
+void testRepeatedPageDoesNotIncreasePageFaults()
+{
+    Dispatcher dispatcher({entry(0, 1, 2)}, {{5, 5}});
+
+    dispatcher.runUntilComplete();
+
+    assert(dispatcher.isComplete());
+    assert(!dispatcher.hasSimulationError());
+    assert(dispatcher.getPageFaultsForPid(0) == 1);
+}
+
+void testRealTimeProcessConsumesMultipleReferencesInOneDispatch()
+{
+    Dispatcher dispatcher({entry(0, 0, 3)}, {{1, 2, 3}});
+
+    dispatcher.runUntilComplete();
+
+    assert(dispatcher.isComplete());
+    assert(!dispatcher.hasSimulationError());
+    assert(dispatcher.getScheduler().getLastRunPid() == 0);
+    assert(dispatcher.getScheduler().getLastConsumedTime() == 3);
+    assert(dispatcher.getPageFaultsForPid(0) == 3);
+}
+
+void testInsufficientReferenceStringRecordsError()
+{
+    Dispatcher dispatcher({entry(0, 1, 2)}, {{8}});
+
+    dispatcher.runUntilComplete();
+
+    assert(dispatcher.hasSimulationError());
+    assert(dispatcher.getSimulationErrorMessage().find("processo 0") != std::string::npos);
+    assert(dispatcher.getPageFaultsForPid(0) == 1);
+}
+
+void testZeroCpuProcessDoesNotConsumeReference()
+{
+    Dispatcher dispatcher({entry(0, 1, 0)}, {{42}});
+
+    dispatcher.runUntilComplete();
+
+    assert(dispatcher.isComplete());
+    assert(!dispatcher.hasSimulationError());
+    assert(dispatcher.hasPageFaultTotal(0));
+    assert(dispatcher.getPageFaultsForPid(0) == 0);
+}
+
 void testInitialAdmissionAndPendingProcesses()
 {
     Dispatcher dispatcher({entry(0, 1, 1), entry(2, 1, 1), entry(5, 1, 1)});
@@ -262,6 +367,15 @@ int main()
 {
     std::cout << "===== Dispatcher Integration Tests =====\n";
 
+    testDispatcherStoresReferenceStrings();
+    testAdmittedProcessGetsInitialPageFaultTotal();
+    testRejectedProcessDoesNotGetPageFaultTotal();
+    testLastRunPidObservation();
+    testUserProcessPageFaultsAreCounted();
+    testRepeatedPageDoesNotIncreasePageFaults();
+    testRealTimeProcessConsumesMultipleReferencesInOneDispatch();
+    testInsufficientReferenceStringRecordsError();
+    testZeroCpuProcessDoesNotConsumeReference();
     testInitialAdmissionAndPendingProcesses();
     testSameStartTimeOrdering();
     testNoDuplicateAdmission();

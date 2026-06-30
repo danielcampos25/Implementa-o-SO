@@ -36,6 +36,7 @@
         events(),
         currentCycle(0),
         lastConsumedTime(0),
+        lastRunPid(-1),
         nextPid(0),
         maxProcesses(maxProcesses),
         agingThreshold(agingThreshold)
@@ -316,6 +317,7 @@
     bool ProcessScheduler::runNext()
     {
         lastConsumedTime = 0;
+        lastRunPid = -1;
         std::optional<int> maybePid = popNextReadyPid();
 
         if (!maybePid.has_value())
@@ -325,6 +327,7 @@
         }
 
         const int pid = maybePid.value();
+        lastRunPid = pid;
         Process &process = getMutableProcess(pid);
         process.markRunning();
         process.resetWaitingCycles();
@@ -417,6 +420,11 @@
     int ProcessScheduler::getLastConsumedTime() const
     {
         return lastConsumedTime;
+    }
+
+    int ProcessScheduler::getLastRunPid() const
+    {
+        return lastRunPid;
     }
 
     const Process &ProcessScheduler::getProcess(int pid) const

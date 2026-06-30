@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
         return ERROR_EXIT_CODE;
     }
 
-    Dispatcher dispatcher(processLoadResult.entries);
+    Dispatcher dispatcher(processLoadResult.entries, referenceStringLoadResult.referenceStrings);
     dispatcher.runUntilComplete();
     dispatcher.printEvents(std::cout);
 

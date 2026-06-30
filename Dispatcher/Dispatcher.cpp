@@ -1,11 +1,21 @@
+#define ProcessType SchedulerProcessType
 #include "Dispatcher.h"
+#undef ProcessType
+
+#include "../MemoryManager/MemoryManager.h"
 
 #include <algorithm>
+#include <memory>
 #include <ostream>
 #include <sstream>
 
 namespace
 {
+ProcessType memoryTypeForPriority(int priority)
+{
+    return priority == Process::REAL_TIME_PRIORITY ? REAL_TIME : USER;
+}
+
 DispatcherEventType toDispatcherEventType(SchedulerEventType type)
 {
     switch (type)
@@ -46,13 +56,32 @@ Dispatcher::Dispatcher()
       admittedProcesses(0),
       rejectedProcesses(0),
       completionRecorded(false),
-      schedulerEventCursor(0)
+      schedulerEventCursor(0),
+      referenceStrings(),
+      referenceStringsConfigured(false),
+      pidReferenceIndexes(),
+      pidReferenceCursors(),
+      pageFaultsByPid(),
+      releasedPids(),
+      memoryManager(std::make_unique<MemoryManager>()),
+      simulationError(false),
+      simulationErrorMessage()
 {
 }
+
+Dispatcher::~Dispatcher() = default;
 
 Dispatcher::Dispatcher(const std::vector<ProcessWorkloadEntry> &entries)
     : Dispatcher()
 {
+    setWorkload(entries);
+}
+
+Dispatcher::Dispatcher(const std::vector<ProcessWorkloadEntry> &entries,
+                       const std::vector<std::vector<int>> &referenceStrings)
+    : Dispatcher()
+{
+    setReferenceStrings(referenceStrings);
     setWorkload(entries);
 }
 
@@ -66,6 +95,7 @@ void Dispatcher::setWorkload(const std::vector<ProcessWorkloadEntry> &entries)
     rejectedProcesses = 0;
     completionRecorded = false;
     schedulerEventCursor = 0;
+    clearMemoryAccountingState();
 
     for (std::size_t index = 0; index < entries.size(); ++index)
     {
@@ -73,6 +103,24 @@ void Dispatcher::setWorkload(const std::vector<ProcessWorkloadEntry> &entries)
         entry.inputOrder = static_cast<int>(index);
         workload.push_back({entry, false, false});
     }
+}
+
+void Dispatcher::setReferenceStrings(const std::vector<std::vector<int>> &newReferenceStrings)
+{
+    referenceStrings = newReferenceStrings;
+    referenceStringsConfigured = true;
+    clearMemoryAccountingState();
+}
+
+void Dispatcher::clearMemoryAccountingState()
+{
+    pidReferenceIndexes.clear();
+    pidReferenceCursors.clear();
+    pageFaultsByPid.clear();
+    releasedPids.clear();
+    memoryManager = std::make_unique<MemoryManager>();
+    simulationError = false;
+    simulationErrorMessage.clear();
 }
 
 void Dispatcher::recordEvent(DispatcherEventType type,
@@ -125,6 +173,94 @@ int Dispatcher::nextPendingStartTime() const
     return nextStartTime;
 }
 
+void Dispatcher::initializeProcessMemoryAccounting(int pid, int inputOrder)
+{
+    if (!referenceStringsConfigured)
+    {
+        return;
+    }
+
+    if (inputOrder < 0 || static_cast<std::size_t>(inputOrder) >= referenceStrings.size())
+    {
+        simulationError = true;
+        simulationErrorMessage = "String de referencia ausente para o processo " + std::to_string(pid);
+        return;
+    }
+
+    pidReferenceIndexes[pid] = static_cast<std::size_t>(inputOrder);
+    pidReferenceCursors[pid] = 0;
+    pageFaultsByPid[pid] = 0;
+}
+
+bool Dispatcher::consumeReferencesForLastRun()
+{
+    if (!referenceStringsConfigured)
+    {
+        return true;
+    }
+
+    const int pid = scheduler.getLastRunPid();
+    const int consumedTime = scheduler.getLastConsumedTime();
+    if (pid < 0 || consumedTime <= 0)
+    {
+        return true;
+    }
+
+    const auto indexIt = pidReferenceIndexes.find(pid);
+    const auto cursorIt = pidReferenceCursors.find(pid);
+    if (indexIt == pidReferenceIndexes.end() || cursorIt == pidReferenceCursors.end())
+    {
+        simulationError = true;
+        simulationErrorMessage = "String de referencia ausente para o processo " + std::to_string(pid);
+        return false;
+    }
+
+    const std::size_t referenceIndex = indexIt->second;
+    if (referenceIndex >= referenceStrings.size())
+    {
+        simulationError = true;
+        simulationErrorMessage = "Indice de string de referencia invalido para o processo " + std::to_string(pid);
+        return false;
+    }
+
+    const Process &process = scheduler.getProcess(pid);
+    const ProcessType memoryType = memoryTypeForPriority(process.getPriority());
+    const std::vector<int> &references = referenceStrings[referenceIndex];
+    std::size_t &cursor = cursorIt->second;
+
+    for (int unit = 0; unit < consumedTime; ++unit)
+    {
+        if (cursor >= references.size())
+        {
+            simulationError = true;
+            simulationErrorMessage = "String de referencia insuficiente para o processo " + std::to_string(pid);
+            return false;
+        }
+
+        const int page = references[cursor++];
+        pageFaultsByPid[pid] += memoryManager->ref_page(pid, page, memoryType);
+    }
+
+    return true;
+}
+
+void Dispatcher::releaseProcessMemoryIfFinished(int pid)
+{
+    if (pid < 0 || releasedPids.find(pid) != releasedPids.end())
+    {
+        return;
+    }
+
+    const Process &process = scheduler.getProcess(pid);
+    if (!process.isFinished())
+    {
+        return;
+    }
+
+    memoryManager->free_process_memory(pid, memoryTypeForPriority(process.getPriority()));
+    releasedPids.insert(pid);
+}
+
 void Dispatcher::admitEligibleProcesses()
 {
     for (PendingProcess &pending : workload)
@@ -159,6 +295,7 @@ void Dispatcher::admitEligibleProcesses()
 
         pending.admitted = true;
         ++admittedProcesses;
+        initializeProcessMemoryAccounting(pid, entry.inputOrder);
         const Process &process = scheduler.getProcess(pid);
         recordEvent(DispatcherEventType::Admission,
                     pid,
@@ -173,6 +310,7 @@ void Dispatcher::admitEligibleProcesses()
                         process.getPriority(),
                         process.getRemainingTime(),
                         "Processo finalizado sem despacho de CPU");
+            releaseProcessMemoryIfFinished(pid);
         }
     }
 }
@@ -201,7 +339,7 @@ void Dispatcher::forwardSchedulerEvents(int cycleOffset)
 
 void Dispatcher::recordCompletionIfNeeded()
 {
-    if (!completionRecorded && !hasPendingProcess() && !scheduler.hasReadyProcess())
+    if (!simulationError && !completionRecorded && !hasPendingProcess() && !scheduler.hasReadyProcess())
     {
         completionRecorded = true;
         recordEvent(DispatcherEventType::Completion,
@@ -214,7 +352,17 @@ void Dispatcher::recordCompletionIfNeeded()
 
 bool Dispatcher::runNext()
 {
+    if (simulationError)
+    {
+        return false;
+    }
+
     admitEligibleProcesses();
+
+    if (simulationError)
+    {
+        return false;
+    }
 
     if (scheduler.hasReadyProcess())
     {
@@ -228,8 +376,16 @@ bool Dispatcher::runNext()
             return false;
         }
 
+        const int lastRunPid = scheduler.getLastRunPid();
+        const bool referencesConsumed = consumeReferencesForLastRun();
         currentCycle += scheduler.getLastConsumedTime();
         forwardSchedulerEvents(cycleOffset);
+        if (!referencesConsumed)
+        {
+            return false;
+        }
+
+        releaseProcessMemoryIfFinished(lastRunPid);
         admitEligibleProcesses();
         recordCompletionIfNeeded();
         return true;
@@ -252,7 +408,7 @@ bool Dispatcher::runNext()
 
         admitEligibleProcesses();
         recordCompletionIfNeeded();
-        return scheduler.hasReadyProcess() || hasPendingProcess();
+        return !simulationError && (scheduler.hasReadyProcess() || hasPendingProcess());
     }
 
     recordCompletionIfNeeded();
@@ -299,6 +455,37 @@ int Dispatcher::rejectedCount() const
 bool Dispatcher::isComplete() const
 {
     return !hasPendingProcess() && !scheduler.hasReadyProcess();
+}
+
+std::size_t Dispatcher::getReferenceStringCount() const
+{
+    return referenceStrings.size();
+}
+
+bool Dispatcher::hasPageFaultTotal(int pid) const
+{
+    return pageFaultsByPid.find(pid) != pageFaultsByPid.end();
+}
+
+int Dispatcher::getPageFaultsForPid(int pid) const
+{
+    const auto it = pageFaultsByPid.find(pid);
+    if (it == pageFaultsByPid.end())
+    {
+        return 0;
+    }
+
+    return it->second;
+}
+
+bool Dispatcher::hasSimulationError() const
+{
+    return simulationError;
+}
+
+const std::string &Dispatcher::getSimulationErrorMessage() const
+{
+    return simulationErrorMessage;
 }
 
 const std::vector<DispatcherEvent> &Dispatcher::getEvents() const
