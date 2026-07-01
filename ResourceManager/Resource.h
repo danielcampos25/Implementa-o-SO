@@ -10,10 +10,10 @@ struct ResourceRequest
 {
     int pid;
 
-    bool printer;
-    bool scanner;
-    bool modem;
-    bool sata;
+    int printer; // 0 = nenhuma, 1 = impressora 1, 2 = impressora 2
+    int scanner; // 0 = nenhum, 1 = scanner
+    int modem;   // 0 = nenhum, 1 = modem
+    int sata;    // 0 = nenhum, 1 = SATA 1, 2 = SATA 2
 };
 
 /*
