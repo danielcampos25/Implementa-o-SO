@@ -10,6 +10,9 @@ EXE = $(BIN)/g2_OS
 RUN_PROCESS_INPUT = tests/input/processes_valid.txt
 RUN_FILES_INPUT = tests/objects/files_example1.txt
 RUN_STRING_INPUT = tests/input/string_valid_for_processes.txt
+SMOKE_PROCESS_INPUT = tests/input/processes_delivery.txt
+SMOKE_FILES_INPUT = tests/objects/files_delivery.txt
+SMOKE_STRING_INPUT = tests/input/string_delivery.txt
 
 RESOURCE_SRC = ResourceManager/ResourceManager.cpp
 MEMORY_SRC = MemoryManager/MemoryManager.cpp
@@ -28,13 +31,14 @@ TEST_DISPATCHER = test_dispatcher.cpp
 TEST_PROCESS_INPUT = test_process_input_loader.cpp
 TEST_REFERENCE_STRING_INPUT = test_reference_string_input_loader.cpp
 TEST_MAIN_FILESYSTEM_FLOW = tests/scripts/test_main_filesystem_flow.cpp
+TEST_DELIVERY_SMOKE = tests/scripts/test_delivery_smoke.cpp
 TEST_FS = tests/scripts/test_filesystem.cpp
 TEST_MEM1 = tests/scripts/test_memory1.cpp
 TEST_MEM2 = tests/scripts/test_memory2.cpp
 
 OBJ = $(RESOURCE_SRC:.cpp=.o) $(MEMORY_SRC:.cpp=.o) $(FILESYSTEM_SRC:.cpp=.o) $(PROCESS_SRC:.cpp=.o)
 
-.PHONY: all compile run clean all_tests test_scheduler_all test_memory_all
+.PHONY: all compile run smoke clean all_tests test_scheduler_all test_memory_all
 
 all: compile test_process_scheduler test_dispatcher test_process_input_loader test_reference_string_input_loader test_main_filesystem_flow
 
@@ -44,6 +48,11 @@ compile: $(MAIN_SRC)
 
 run: compile
 	./$(EXE) $(RUN_PROCESS_INPUT) $(RUN_FILES_INPUT) $(RUN_STRING_INPUT)
+
+smoke: compile $(TEST_DELIVERY_SMOKE)
+	@mkdir -p $(BIN)
+	$(CXX) $(CXXFLAGS) $(TEST_DELIVERY_SMOKE) -o $(BIN)/$(notdir $(basename $(TEST_DELIVERY_SMOKE)))
+	./$(BIN)/$(notdir $(basename $(TEST_DELIVERY_SMOKE)))
 
 dispatcher: $(MAIN_SRC)
 	@mkdir -p $(BIN)

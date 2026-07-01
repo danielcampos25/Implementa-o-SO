@@ -216,6 +216,57 @@ Próximos passos recomendados:
 - Integrar o `ProcessScheduler` ao dispatcher principal quando o parser de entrada estiver definido.
 - Conectar eventos de bloqueio/desbloqueio ao dispatcher principal.
 
+## Entrega 2026/1
+
+### Requisitos
+
+- Compilador C++ com suporte a C++17.
+- `make` disponível no ambiente.
+- Três arquivos de entrada para a execução oficial: `processes.txt`, `files.txt` e `string.txt`.
+
+### Como Compilar
+
+```bash
+make clean
+make all
+```
+
+### Como Executar
+
+```bash
+make run
+make smoke
+```
+
+Exemplo de comando direto:
+
+```bash
+./bin/g2_OS tests/input/processes_delivery.txt tests/objects/files_delivery.txt tests/input/string_delivery.txt
+```
+
+### Formato dos Arquivos de Entrada
+
+- `processes.txt`: cada linha contém `startTime priority processorTime memoryBlocks printerRequest scannerRequest modemRequest sataDiskRequest`.
+- `files.txt`: define blocos totais, segmentos iniciais e operações `create/delete` associadas a PIDs.
+- `string.txt`: contém uma string de referência por processo, na mesma ordem de `processes.txt`.
+
+### O Que a Saída Mostra
+
+- Eventos da simulação do escalonador.
+- `Número de Faltas de Páginas por processo:`
+- `Sistema de arquivos =>`
+- `Mapa de ocupação do disco:`
+
+### Módulos Implementados
+
+- Escalonamento de processos.
+- Memória virtual com page faults.
+- Sistema de arquivos com permissões por prioridade.
+
+### Observação Sobre IA
+
+Este projeto foi estruturado e documentado com apoio de Codex e Spec Kit para organização da entrega e dos artefatos de validação.
+
 ## Módulo de Carregamento de Entrada de Processos
 
 Esta feature adiciona o módulo `ProcessInput/`, responsável por carregar um arquivo `processes.txt` e transformar cada linha válida em uma entrada `ProcessWorkloadEntry` para uso posterior pelo `Dispatcher`.
