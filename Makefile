@@ -68,8 +68,9 @@ MEMORY_SRC = MemoryManager/MemoryManager.cpp
 
 TEST_MEM1 = tests/scripts/test_memory1.cpp
 TEST_MEM2 = tests/scripts/test_memory2.cpp
+TEST_MEM3 = tests/scripts/test_memory3.cpp
 
-test_memory_all: test_memory1 test_memory2
+test_memory_all: test_memory1 test_memory2 test_memory3
 
 test_memory1:
 	$(CXX) $(CXXFLAGS) $(MEMORY_SRC) $(TEST_MEM1) -o bin/$@
@@ -77,6 +78,10 @@ test_memory1:
 
 test_memory2:
 	$(CXX) $(CXXFLAGS) $(MEMORY_SRC) $(TEST_MEM2) -o bin/$@
+	./bin/$@
+
+test_memory3:
+	$(CXX) $(CXXFLAGS) $(MEMORY_SRC) $(TEST_MEM3) -o bin/$@
 	./bin/$@
 
 

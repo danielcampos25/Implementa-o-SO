@@ -109,6 +109,10 @@ class MemoryManager {
          * @param process_type Tipo do processo. USER (processo de usuário) ou REAL_TIME (processo de tempo real).
          */
         void free_process_memory(int pid, ProcessType process_type);
+
+
+        // DEBUG
+        void show_memory_table(ProcessType process_type);
 };
 
 #endif

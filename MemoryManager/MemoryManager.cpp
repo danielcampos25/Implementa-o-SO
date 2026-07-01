@@ -4,8 +4,9 @@
 #include <unordered_map>
 #include <utility>
 #include <exception>
+#include <iostream>
 
-//*Feito na mão, com consulta no Gemini para sugetões e correção de erros
+//*Feito na mão, com consulta no Gemini para sugestões e correção de erros
 
 // | --------------------------------------------
 // | Geral
@@ -130,7 +131,8 @@ void MemoryManager::alloc_page(int pid, int page_number, int index, ProcessType 
 
     std::vector<FrameEntry>& memory_table = this->get_memory_table(process_type);
     
-    memory_table[index] = FrameEntry{pid, page_number};
+    memory_table[index].pid = pid;
+    memory_table[index].page_number = page_number;
 }
 
 
@@ -174,7 +176,7 @@ void MemoryManager::substitute_local(int pid, int page_number, ProcessType proce
         
     // Encontrar a posição na memória da página a ser substituída
     for (int i = 0; i < memory_table.size(); i++) {
-        if (memory_table[i].page_number == replaced_page) {
+        if (memory_table[i].page_number == replaced_page && memory_table[i].pid == pid) {
             replaced_page_index = i;
             break;
         }
@@ -192,6 +194,27 @@ void MemoryManager::substitute_local(int pid, int page_number, ProcessType proce
 
     // Inserir nova página no WorkingSet do processo
     this->working_sets[pid].pages_in_mem.push_back(int_pair(page_number, 0));
+}
+
+
+// \ --------------------------------------------
+
+
+
+// | --------------------------------------------
+// | Debug
+// | --------------------------------------------
+
+void MemoryManager::show_memory_table(ProcessType process_type) {
+    std::vector<FrameEntry> memory_table = this->get_memory_table(process_type);
+    
+    std::cout << "\n\nTabela de Memoria de " << (process_type == USER ? "Usuarios:" : "Tempo Real:");
+    std::cout << "\n\n/--------------\n";
+    std::cout << "| PID | Pag. |\n";
+    for (FrameEntry f : memory_table) {
+        std::cout << "|  " << f.pid << "  |  " << f.page_number << "  |\n";
+    }
+    std::cout << "\\--------------\n\n";
 }
 
 
