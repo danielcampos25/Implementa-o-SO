@@ -45,11 +45,20 @@ void MemoryManager::free_process_memory(int pid, ProcessType process_type) {
 
     // Remover WorkingSet do processo
     this->working_sets.erase(pid);
+    this->max_working_set_by_pid.erase(pid);
 }
 
 // \ --------------------------------------------
 
+void MemoryManager::register_process_working_set_limit(int pid, int max_working_set)
+{
+    if (max_working_set <= 0)
+    {
+        max_working_set = 1;
+    }
 
+    this->max_working_set_by_pid[pid] = max_working_set;
+}
 
 // | --------------------------------------------
 // | Referência e Falta de Página
@@ -86,10 +95,13 @@ int MemoryManager::ref_page(int pid, int page_number, ProcessType process_type) 
 
 void MemoryManager::page_fault(int pid, int page_number, ProcessType process_type) {
     
-    //>TO-DO: obter esse valor da tabela de processos OU colocar como parâmetro OU manter um vetor de max_working_sets na classe
-    // Algo como:
-    // int max_working_set = ProcessManager.get_process_info(pid).max_working_set
-    const int max_working_set = 4;
+    int max_working_set = 4;
+
+    const auto maxIt = this->max_working_set_by_pid.find(pid);
+    if (maxIt != this->max_working_set_by_pid.end())
+    {
+        max_working_set = maxIt->second;
+    }
     
     
     // Verificar se o processo está no mapa de Working Sets
@@ -174,7 +186,7 @@ void MemoryManager::substitute_local(int pid, int page_number, ProcessType proce
         
     // Encontrar a posição na memória da página a ser substituída
     for (int i = 0; i < memory_table.size(); i++) {
-        if (memory_table[i].page_number == replaced_page) {
+        if (memory_table[i].pid == pid && memory_table[i].page_number == replaced_page) {
             replaced_page_index = i;
             break;
         }

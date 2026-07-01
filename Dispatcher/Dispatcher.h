@@ -91,7 +91,8 @@ private:
     bool hasPendingProcess() const;
     int nextPendingStartTime() const;
     void clearMemoryAccountingState();
-    void initializeProcessMemoryAccounting(int pid, int inputOrder);
+    void initializeProcessMemoryAccounting(int pid, const ProcessWorkloadEntry &entry);
+    void preloadFirstReferenceIfAvailable(int pid, const ProcessWorkloadEntry &entry);
     bool consumeReferencesForLastRun();
     void releaseProcessMemoryIfFinished(int pid);
     void forwardSchedulerEvents(int cycleOffset);

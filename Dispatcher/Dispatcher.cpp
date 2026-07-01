@@ -173,23 +173,54 @@ int Dispatcher::nextPendingStartTime() const
     return nextStartTime;
 }
 
-void Dispatcher::initializeProcessMemoryAccounting(int pid, int inputOrder)
+void Dispatcher::initializeProcessMemoryAccounting(int pid, const ProcessWorkloadEntry &entry)
 {
+    memoryManager->register_process_working_set_limit(pid, entry.memoryBlocks);
+
     if (!referenceStringsConfigured)
     {
         return;
     }
 
-    if (inputOrder < 0 || static_cast<std::size_t>(inputOrder) >= referenceStrings.size())
+    if (entry.inputOrder < 0 || static_cast<std::size_t>(entry.inputOrder) >= referenceStrings.size())
     {
         simulationError = true;
         simulationErrorMessage = "String de referencia ausente para o processo " + std::to_string(pid);
         return;
     }
 
-    pidReferenceIndexes[pid] = static_cast<std::size_t>(inputOrder);
+    pidReferenceIndexes[pid] = static_cast<std::size_t>(entry.inputOrder);
     pidReferenceCursors[pid] = 0;
     pageFaultsByPid[pid] = 0;
+
+    preloadFirstReferenceIfAvailable(pid, entry);
+}
+
+void Dispatcher::preloadFirstReferenceIfAvailable(int pid, const ProcessWorkloadEntry &entry)
+{
+    if (!referenceStringsConfigured || entry.processorTime <= 0)
+    {
+        return;
+    }
+
+    const auto indexIt = pidReferenceIndexes.find(pid);
+    if (indexIt == pidReferenceIndexes.end() || indexIt->second >= referenceStrings.size())
+    {
+        return;
+    }
+
+    const std::vector<int> &references = referenceStrings[indexIt->second];
+    if (references.empty())
+    {
+        simulationError = true;
+        simulationErrorMessage = "String de referencia vazia para o processo " + std::to_string(pid);
+        return;
+    }
+
+    const ProcessType memoryType = memoryTypeForPriority(entry.priority);
+
+    // Pré-carga: carrega a primeira página sem somar o retorno ao contador de faltas.
+    memoryManager->ref_page(pid, references.front(), memoryType);
 }
 
 bool Dispatcher::consumeReferencesForLastRun()
@@ -295,7 +326,7 @@ void Dispatcher::admitEligibleProcesses()
 
         pending.admitted = true;
         ++admittedProcesses;
-        initializeProcessMemoryAccounting(pid, entry.inputOrder);
+        initializeProcessMemoryAccounting(pid, entry);
         const Process &process = scheduler.getProcess(pid);
         recordEvent(DispatcherEventType::Admission,
                     pid,

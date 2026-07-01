@@ -65,6 +65,7 @@ class MemoryManager {
         std::vector<FrameEntry> memory_table_usr = std::vector<FrameEntry>(N_FRAMES_USR);
 
         std::unordered_map<int, WorkingSet> working_sets;
+        std::unordered_map<int, int> max_working_set_by_pid;
 
         // Aloca uma página na memória no index solicitado, independente de estar vazia ou não
         void alloc_page(int pid, int page_number, int index, ProcessType process_type);
@@ -84,7 +85,13 @@ class MemoryManager {
 
     public:
         MemoryManager() {}
-
+        /**
+         * @brief Registra o limite máximo do working set de um processo.
+         * @param pid PID do processo.
+         * @param max_working_set Quantidade máxima de páginas/frames no working set local.
+         */
+        void register_process_working_set_limit(int pid, int max_working_set);
+        
         /**
          * @brief Verifica se a memória de processos está cheia.
          * @param process_type Qual tabela de memória: USER (tabela de memória de processos de usuário)

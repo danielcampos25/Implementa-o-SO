@@ -108,7 +108,7 @@ void testUserProcessPageFaultsAreCounted()
     assert(dispatcher.isComplete());
     assert(!dispatcher.hasSimulationError());
     assert(dispatcher.hasPageFaultTotal(0));
-    assert(dispatcher.getPageFaultsForPid(0) == 2);
+    assert(dispatcher.getPageFaultsForPid(0) == 1);
 }
 
 void testRepeatedPageDoesNotIncreasePageFaults()
@@ -119,7 +119,7 @@ void testRepeatedPageDoesNotIncreasePageFaults()
 
     assert(dispatcher.isComplete());
     assert(!dispatcher.hasSimulationError());
-    assert(dispatcher.getPageFaultsForPid(0) == 1);
+    assert(dispatcher.getPageFaultsForPid(0) == 0);
 }
 
 void testRealTimeProcessConsumesMultipleReferencesInOneDispatch()
@@ -132,7 +132,7 @@ void testRealTimeProcessConsumesMultipleReferencesInOneDispatch()
     assert(!dispatcher.hasSimulationError());
     assert(dispatcher.getScheduler().getLastRunPid() == 0);
     assert(dispatcher.getScheduler().getLastConsumedTime() == 3);
-    assert(dispatcher.getPageFaultsForPid(0) == 3);
+    assert(dispatcher.getPageFaultsForPid(0) == 2);
 }
 
 void testInsufficientReferenceStringRecordsError()
@@ -143,7 +143,7 @@ void testInsufficientReferenceStringRecordsError()
 
     assert(dispatcher.hasSimulationError());
     assert(dispatcher.getSimulationErrorMessage().find("processo 0") != std::string::npos);
-    assert(dispatcher.getPageFaultsForPid(0) == 1);
+    assert(dispatcher.getPageFaultsForPid(0) == 0);
 }
 
 void testZeroCpuProcessDoesNotConsumeReference()
@@ -194,7 +194,7 @@ void testPageFaultSummaryFormatting()
     const std::string text = output.str();
 
     assert(text.find("Número de Faltas de Páginas por processo:") != std::string::npos);
-    assert(text.find("P0 = 1 faltas de páginas") != std::string::npos);
+    assert(text.find("P0 = 0 faltas de páginas") != std::string::npos);
 }
 
 void testPageFaultSummaryAppearsAfterEvents()
