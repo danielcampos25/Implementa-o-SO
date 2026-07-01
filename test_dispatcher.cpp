@@ -135,14 +135,14 @@ void testRealTimeProcessConsumesMultipleReferencesInOneDispatch()
     assert(dispatcher.getPageFaultsForPid(0) == 2);
 }
 
-void testInsufficientReferenceStringRecordsError()
+void testShortReferenceStringIsValid()
 {
     Dispatcher dispatcher({entry(0, 1, 2)}, {{8}});
 
     dispatcher.runUntilComplete();
 
-    assert(dispatcher.hasSimulationError());
-    assert(dispatcher.getSimulationErrorMessage().find("processo 0") != std::string::npos);
+    assert(dispatcher.isComplete());
+    assert(!dispatcher.hasSimulationError());
     assert(dispatcher.getPageFaultsForPid(0) == 0);
 }
 
@@ -431,7 +431,7 @@ int main()
     testUserProcessPageFaultsAreCounted();
     testRepeatedPageDoesNotIncreasePageFaults();
     testRealTimeProcessConsumesMultipleReferencesInOneDispatch();
-    testInsufficientReferenceStringRecordsError();
+    testShortReferenceStringIsValid();
     testZeroCpuProcessDoesNotConsumeReference();
     testPageFaultTotalsAreOrderedByPid();
     testPageFaultTotalsExcludeRejectedProcesses();
