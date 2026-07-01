@@ -24,6 +24,12 @@ int main() {
     // =================================================================
     std::cout << ">> Teste 1: Falta de pagina e acerto na memoria\n";
     
+    mm.register_process_working_set_limit(0, 4);
+    mm.register_process_working_set_limit(1, 4);
+    mm.register_process_working_set_limit(2, 4);
+    mm.register_process_working_set_limit(3, 4);
+    mm.register_process_working_set_limit(4, 4);
+
     fault = mm.ref_page(0, 10, USER); // Page 10, PID 0
     print_test_result("Falta de pagina (Miss) na primeira referencia", fault == 1);
     

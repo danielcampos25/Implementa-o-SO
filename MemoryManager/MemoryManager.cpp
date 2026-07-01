@@ -96,17 +96,13 @@ int MemoryManager::ref_page(int pid, int page_number, ProcessType process_type) 
 
 void MemoryManager::page_fault(int pid, int page_number, ProcessType process_type) {
     
-    int max_working_set = -1;
+    int max_working_set = 1;
 
     const auto maxIt = this->max_working_set_by_pid.find(pid);
     if (maxIt != this->max_working_set_by_pid.end())
     {
         max_working_set = maxIt->second;
     }
-
-    if (max_working_set == -1)
-        throw std::runtime_error("Erro ao definit max_working_set");
-    
     
     // Verificar se o processo está no mapa de Working Sets
     auto it = this->working_sets.find(pid);
