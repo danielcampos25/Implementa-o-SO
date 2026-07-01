@@ -225,13 +225,20 @@ FileOperationResult FileSystemManager::executeOperation(const FileOperation &op)
 {
     // Encontrar prioridade do processo
     int priority = 1; // Default: usuário
+    bool processFound = false;
     for (const auto &proc : processes)
     {
         if (proc.pid == op.processPID)
         {
             priority = proc.priority;
+            processFound = true;
             break;
         }
+    }
+
+    if (!processFound)
+    {
+        return FileOperationResult(false, "Processo " + std::to_string(op.processPID) + " não existe.");
     }
     
     if (op.op == CREATE)

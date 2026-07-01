@@ -8,12 +8,28 @@
  */
 struct ResourceRequest
 {
-    int pid; // Identificador do processo
+    int pid;
 
-    bool printer; // Requisição de impressora
-    bool scanner; // Requisição de scanner
-    bool modem;   // Requisição de modem
-    bool sata;    // Requisição de disco SATA
+    bool printer;
+    bool scanner;
+    bool modem;
+    bool sata;
+};
+
+/*
+ * blockedBy indica quais recursos impediram a alocação.
+ *
+ * true  -> recurso indisponível
+ * false -> recurso disponível
+ */
+struct blockedBy
+{
+    int pid;
+
+    bool printer;
+    bool scanner;
+    bool modem;
+    bool sata;
 };
 
 #endif

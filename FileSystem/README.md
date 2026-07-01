@@ -115,7 +115,7 @@ g++ -std=c++17 FileSystem/FileSystem.cpp FileSystem/FileSystemManager.cpp test_f
 
 ## Integração com o Pseudo-SO
 
-### Para integrar com o Scheduler:
+### Para integrar com o ProcessScheduler:
 1. Modificar `isRealTimeProcess()` para consultar prioridade real do processo
 2. Passar `priority` correto nas chamadas de `createFile()` e `deleteFile()`
 3. Implementar interface de fila de operações de arquivo

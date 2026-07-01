@@ -24,7 +24,7 @@ SO_implementacao.worktrees/
 ├── example_complete.cpp             # Exemplo completo (237 linhas)
 ├── Makefile                         # Configuração de compilação
 ├── ResourceManager/                 # Módulo de recursos (existente)
-└── Scheduler/                       # Módulo de escalonamento (existente)
+└── ProcessScheduler/                # Módulo de escalonamento e bloqueio por E/S
 ```
 
 ---
@@ -114,7 +114,8 @@ make run  # Executa todos os testes
 ```bash
 g++ -std=c++17 -Wall -Wextra \
     ResourceManager/ResourceManager.cpp \
-    Scheduler/scheduler.cpp \
+    Process/Process.cpp \
+    ProcessScheduler/ProcessScheduler.cpp \
     FileSystem/FileSystem.cpp \
     FileSystem/FileSystemManager.cpp \
     dispatcher.cpp -o dispatcher
@@ -144,7 +145,7 @@ g++ -std=c++17 -Wall -Wextra \
 ## 🔌 Integração com Pseudo-SO
 
 ### Pré-requisitos
-- Scheduler implementado
+- ProcessScheduler implementado
 - ResourceManager implementado
 - Arquivo de configuração (files.txt)
 
@@ -337,9 +338,9 @@ int total = fs.getTotalSpace();         // Total de blocos
 std::string map = fs.getDiskMapString();// Visualização
 ```
 
-### Integração com Scheduler
+### Integração com ProcessScheduler
 ```cpp
-fs.setScheduler(scheduler);
+fs.setScheduler(processScheduler);
 // Consulta prioridade automaticamente
 ```
 
@@ -437,7 +438,7 @@ fs.setScheduler(scheduler);
 ## 🚀 Próximas Etapas
 
 1. **Integração** - Adicionar ao dispatcher
-2. **Testes** - Validar com Scheduler
+2. **Testes** - Validar com ProcessScheduler
 3. **Otimização** - Se necessário
 4. **Documentação** - Atualizar conforme usado
 
