@@ -93,7 +93,7 @@ private:
     void clearMemoryAccountingState();
     void initializeProcessMemoryAccounting(int pid, const ProcessWorkloadEntry &entry);
     void preloadFirstReferenceIfAvailable(int pid, const ProcessWorkloadEntry &entry);
-    bool consumeReferencesForLastRun();
+    bool consumeAllReferencesForProcess(int pid);
     void releaseProcessMemoryIfFinished(int pid);
     void forwardSchedulerEvents(int cycleOffset);
     void recordCompletionIfNeeded();
@@ -129,6 +129,7 @@ public:
     static std::string formatEvent(const DispatcherEvent &event);
     void printEvents(std::ostream &output) const;
     void printPageFaultSummary(std::ostream &output) const;
+    void printMemoryTables();
 };
 
 #endif

@@ -223,16 +223,15 @@ void Dispatcher::preloadFirstReferenceIfAvailable(int pid, const ProcessWorkload
     memoryManager->ref_page(pid, references.front(), memoryType);
 }
 
-bool Dispatcher::consumeReferencesForLastRun()
+bool Dispatcher::consumeAllReferencesForProcess(int pid)
 {
-    if (!referenceStringsConfigured)
+    if (!referenceStringsConfigured || pid < 0)
     {
         return true;
     }
 
-    const int pid = scheduler.getLastRunPid();
-    const int consumedTime = scheduler.getLastConsumedTime();
-    if (pid < 0 || consumedTime <= 0)
+    const Process &process = scheduler.getProcess(pid);
+    if (process.getProcessorTime() <= 0)
     {
         return true;
     }
@@ -254,27 +253,18 @@ bool Dispatcher::consumeReferencesForLastRun()
         return false;
     }
 
-    const Process &process = scheduler.getProcess(pid);
     const ProcessType memoryType = memoryTypeForPriority(process.getPriority());
     const std::vector<int> &references = referenceStrings[referenceIndex];
     std::size_t &cursor = cursorIt->second;
 
-    for (int unit = 0; unit < consumedTime; ++unit)
+    while (cursor < references.size())
     {
-        if (cursor >= references.size())
-        {
-            simulationError = true;
-            simulationErrorMessage = "String de referencia insuficiente para o processo " + std::to_string(pid);
-            return false;
-        }
-
         const int page = references[cursor++];
         pageFaultsByPid[pid] += memoryManager->ref_page(pid, page, memoryType);
     }
 
     return true;
 }
-
 void Dispatcher::releaseProcessMemoryIfFinished(int pid)
 {
     if (pid < 0 || releasedPids.find(pid) != releasedPids.end())
@@ -287,6 +277,11 @@ void Dispatcher::releaseProcessMemoryIfFinished(int pid)
     {
         return;
     }
+
+    if (!consumeAllReferencesForProcess(pid))
+{
+    return;
+}
 
     memoryManager->free_process_memory(pid, memoryTypeForPriority(process.getPriority()));
     releasedPids.insert(pid);
@@ -408,15 +403,15 @@ bool Dispatcher::runNext()
         }
 
         const int lastRunPid = scheduler.getLastRunPid();
-        const bool referencesConsumed = consumeReferencesForLastRun();
         currentCycle += scheduler.getLastConsumedTime();
         forwardSchedulerEvents(cycleOffset);
-        if (!referencesConsumed)
+
+        releaseProcessMemoryIfFinished(lastRunPid);
+        if (simulationError)
         {
             return false;
         }
 
-        releaseProcessMemoryIfFinished(lastRunPid);
         admitEligibleProcesses();
         recordCompletionIfNeeded();
         return true;
@@ -596,4 +591,9 @@ void Dispatcher::printPageFaultSummary(std::ostream &output) const
     {
         output << 'P' << total.first << " = " << total.second << " faltas de páginas\n";
     }
+}
+
+void Dispatcher::printMemoryTables() {
+    memoryManager->show_memory_table(REAL_TIME);
+    memoryManager->show_memory_table(USER);
 }

@@ -67,19 +67,18 @@ void testInvalidFileSystemInputFailsClearly()
     assertNotContains(output, "Mapa de ocupação do disco:");
 }
 
-void testFileSystemIsSkippedWhenDispatcherReportsSimulationError()
+void testShortReferenceStringsAreAccepted()
 {
-    const std::string outputPath = "/tmp/g2_os_main_flow_simulation_error.txt";
+    const std::string outputPath = "/tmp/g2_os_main_flow_short_strings.txt";
     const int exitCode = runProgram("tests/input/processes_valid.txt tests/objects/files_example1.txt tests/input/string_insufficient_main_flow.txt",
                                     outputPath);
     const std::string output = readFile(outputPath);
 
     assert(exitCode == 0);
-    assertContains(output, "type=dispatch");
-    assertNotContains(output, "type=completion");
-    assertNotContains(output, "Número de Faltas de Páginas por processo:");
-    assertNotContains(output, "Sistema de arquivos =>");
-    assertNotContains(output, "Mapa de ocupação do disco:");
+    assertContains(output, "type=completion");
+    assertContains(output, "Número de Faltas de Páginas por processo:");
+    assertContains(output, "Sistema de arquivos =>");
+    assertContains(output, "Mapa de ocupação do disco:");
 }
 
 void testOutputOrder()
@@ -113,7 +112,7 @@ int main()
 {
     testValidFileSystemInputIsProcessed();
     testInvalidFileSystemInputFailsClearly();
-    testFileSystemIsSkippedWhenDispatcherReportsSimulationError();
+    testShortReferenceStringsAreAccepted();
     testOutputOrder();
     testLoadedProcessPrioritiesAreUsed();
 
