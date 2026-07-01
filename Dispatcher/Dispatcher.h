@@ -129,6 +129,7 @@ public:
     static std::string formatEvent(const DispatcherEvent &event);
     void printEvents(std::ostream &output) const;
     void printPageFaultSummary(std::ostream &output) const;
+    void printMemoryTables();
 };
 
 #endif

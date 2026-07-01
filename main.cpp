@@ -106,6 +106,7 @@ int main(int argc, char *argv[])
     if (!dispatcher.hasSimulationError())
     {
         dispatcher.printPageFaultSummary(std::cout);
+        dispatcher.printMemoryTables();
         fileSystemManager.executeAllOperations();
         fileSystemManager.printResults();
         fileSystemManager.printFinalDiskMap();

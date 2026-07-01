@@ -223,13 +223,13 @@ void MemoryManager::substitute_local(int pid, int page_number, ProcessType proce
 void MemoryManager::show_memory_table(ProcessType process_type) {
     std::vector<FrameEntry> memory_table = this->get_memory_table(process_type);
     
-    std::cout << "\n\nTabela de Memoria de " << (process_type == USER ? "Usuarios:" : "Tempo Real:");
-    std::cout << "\n\n/--------------\n";
-    std::cout << "| PID | Pag. |\n";
+    std::cout << "\nTabela de Memoria de " << (process_type == USER ? "Usuarios:" : "Tempo Real:");
+    std::cout << "\n/--------------\n";
+    std::cout << "| PID  | Pag. |\n";
     for (FrameEntry f : memory_table) {
         std::cout << "|  " << f.pid << "  |  " << f.page_number << "  |\n";
     }
-    std::cout << "\\--------------\n\n";
+    std::cout << "\\--------------\n";
 }
 
 

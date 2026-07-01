@@ -592,3 +592,8 @@ void Dispatcher::printPageFaultSummary(std::ostream &output) const
         output << 'P' << total.first << " = " << total.second << " faltas de páginas\n";
     }
 }
+
+void Dispatcher::printMemoryTables() {
+    memoryManager->show_memory_table(REAL_TIME);
+    memoryManager->show_memory_table(USER);
+}
