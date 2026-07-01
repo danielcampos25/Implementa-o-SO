@@ -35,6 +35,7 @@ TEST_DELIVERY_SMOKE = tests/scripts/test_delivery_smoke.cpp
 TEST_FS = tests/scripts/test_filesystem.cpp
 TEST_MEM1 = tests/scripts/test_memory1.cpp
 TEST_MEM2 = tests/scripts/test_memory2.cpp
+TEST_MEM3 = tests/scripts/test_memory3.cpp
 
 OBJ = $(RESOURCE_SRC:.cpp=.o) $(MEMORY_SRC:.cpp=.o) $(FILESYSTEM_SRC:.cpp=.o) $(PROCESS_SRC:.cpp=.o)
 
@@ -116,6 +117,11 @@ test_memory1: $(MEMORY_SRC) $(TEST_MEM1)
 test_memory2: $(MEMORY_SRC) $(TEST_MEM2)
 	@mkdir -p $(BIN)
 	$(CXX) $(CXXFLAGS) $(MEMORY_SRC) $(TEST_MEM2) -o $(BIN)/$@
+	./$(BIN)/$@
+
+test_memory3: $(MEMORY_SRC) $(TEST_MEM3)
+	@mkdir -p $(BIN)
+	$(CXX) $(CXXFLAGS) $(MEMORY_SRC) $(TEST_MEM3) -o $(BIN)/$@
 	./$(BIN)/$@
 
 test_filesystem: $(FILESYSTEM_SRC) $(TEST_FS)
