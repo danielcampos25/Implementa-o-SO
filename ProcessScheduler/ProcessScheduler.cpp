@@ -4,9 +4,14 @@
 
     namespace
     {
-    bool isBinaryResourceRequest(int request)
+    bool isSingleInstanceResourceRequest(int request)
     {
         return request == 0 || request == 1;
+    }
+
+    bool isDualInstanceResourceRequest(int request)
+    {
+        return request >= 0 && request <= 2;
     }
 
     bool hasInvalidResourceRequest(int printerRequest,
@@ -14,10 +19,10 @@
                                 int modemRequest,
                                 int sataDiskRequest)
     {
-        return !isBinaryResourceRequest(printerRequest) ||
-            !isBinaryResourceRequest(scannerRequest) ||
-            !isBinaryResourceRequest(modemRequest) ||
-            !isBinaryResourceRequest(sataDiskRequest);
+        return !isDualInstanceResourceRequest(printerRequest) ||
+            !isSingleInstanceResourceRequest(scannerRequest) ||
+            !isSingleInstanceResourceRequest(modemRequest) ||
+            !isDualInstanceResourceRequest(sataDiskRequest);
     }
 
     bool hasIoRequest(int printerRequest,

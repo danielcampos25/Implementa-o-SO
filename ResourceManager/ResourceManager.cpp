@@ -62,25 +62,28 @@ blockedBy ResourceManager::canAllocate(const ResourceRequest &req)
     blockeds.pid = req.pid;
 
     // Bloqueia apenas se o recurso estiver ocupado por OUTRO processo
-    blockeds.scanner = (req.scanner && scannerOwner != -1 && scannerOwner != req.pid);
-    blockeds.modem = (req.modem && modemOwner != -1 && modemOwner != req.pid);
+    blockeds.scanner = (req.scanner != 0 && scannerOwner != -1 && scannerOwner != req.pid);
+    blockeds.modem = (req.modem != 0 && modemOwner != -1 && modemOwner != req.pid);
 
-    int printerAvailableCount = 0;
-    for (int i = 0; i < 2; ++i)
+    blockeds.printer = false;
+    if (req.printer != 0)
     {
-        if (printerOwners[i] == -1 || printerOwners[i] == req.pid)
-            printerAvailableCount++;
+        const int printerIndex = req.printer - 1;
+        blockeds.printer =
+            printerIndex < 0 ||
+            printerIndex >= 2 ||
+            (printerOwners[printerIndex] != -1 && printerOwners[printerIndex] != req.pid);
     }
-    blockeds.printer = (req.printer && printerAvailableCount == 0);
 
-    int sataAvailableCount = 0;
-    for (int i = 0; i < 2; ++i)
+    blockeds.sata = false;
+    if (req.sata != 0)
     {
-        if (sataOwners[i] == -1 || sataOwners[i] == req.pid)
-            sataAvailableCount++;
+        const int sataIndex = req.sata - 1;
+        blockeds.sata =
+            sataIndex < 0 ||
+            sataIndex >= 2 ||
+            (sataOwners[sataIndex] != -1 && sataOwners[sataIndex] != req.pid);
     }
-    blockeds.sata = (req.sata && sataAvailableCount == 0);
-
     return blockeds;
 }
 
@@ -111,10 +114,10 @@ bool ResourceManager::allocate(const ResourceRequest &req, bool canBlock)
     blockedBy blocked_by = canAllocate(req);
 
     // Verifica se algum recurso solicitado está bloqueado
-    bool isBlocked = (req.scanner && blocked_by.scanner) ||
-                     (req.modem && blocked_by.modem) ||
-                     (req.printer && blocked_by.printer) ||
-                     (req.sata && blocked_by.sata);
+    bool isBlocked = (req.scanner != 0 && blocked_by.scanner) ||
+                    (req.modem != 0 && blocked_by.modem) ||
+                    (req.printer != 0 && blocked_by.printer) ||
+                    (req.sata != 0 && blocked_by.sata);
 
     if (isBlocked)
     {
@@ -127,33 +130,26 @@ bool ResourceManager::allocate(const ResourceRequest &req, bool canBlock)
     }
 
     // Alocação (se chegou aqui, o caminho está livre)
-    if (req.scanner)
-        scannerOwner = req.pid;
-    if (req.modem)
-        modemOwner = req.pid;
-
-    if (req.printer)
+    if (req.scanner != 0)
     {
-        for (int i = 0; i < 2; ++i)
-        {
-            if (printerOwners[i] == -1)
-            {
-                printerOwners[i] = req.pid;
-                break; // Aloca apenas uma instância por chamada conforme sua lógica
-            }
-        }
+        scannerOwner = req.pid;
     }
 
-    if (req.sata)
+    if (req.modem != 0)
     {
-        for (int i = 0; i < 2; ++i)
-        {
-            if (sataOwners[i] == -1)
-            {
-                sataOwners[i] = req.pid;
-                break;
-            }
-        }
+        modemOwner = req.pid;
+    }
+
+    if (req.printer != 0)
+    {
+        const int printerIndex = req.printer - 1;
+        printerOwners[printerIndex] = req.pid;
+    }
+
+    if (req.sata != 0)
+    {
+        const int sataIndex = req.sata - 1;
+        sataOwners[sataIndex] = req.pid;
     }
 
     return true;

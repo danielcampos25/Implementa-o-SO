@@ -45,12 +45,13 @@ Process::Process(int pid,
     {
         throw std::invalid_argument("Tamanho do conjunto de trabalho nao pode ser negativo");
     }
-    if ((printerRequest != 0 && printerRequest != 1) ||
+    if ((printerRequest < 0 || printerRequest > 2) ||
         (scannerRequest != 0 && scannerRequest != 1) ||
         (modemRequest != 0 && modemRequest != 1) ||
-        (sataDiskRequest != 0 && sataDiskRequest != 1))
+        (sataDiskRequest < 0 || sataDiskRequest > 2))
     {
-        throw std::invalid_argument("Requisicoes de recursos devem ser 0 ou 1");
+        throw std::invalid_argument(
+            "Requisicoes invalidas: impressora/SATA devem ser 0, 1 ou 2; scanner/modem devem ser 0 ou 1");
     }
     if (isRealTime() &&
         (printerRequest != 0 || scannerRequest != 0 ||
